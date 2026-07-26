@@ -21,7 +21,7 @@ import {
 import BarraLateral from "@/navegacion/BarraLateral";
 
 const VISTAS = {
-  dashboard: Tablero,
+  tablero: Tablero,
   mensualidades: Mensualidades,
   accesorios: Accesorios,
   reportes: Reportes,

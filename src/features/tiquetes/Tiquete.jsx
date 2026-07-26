@@ -27,7 +27,12 @@ function calcularBarras(ficha, placa) {
   });
 }
 
-function Tiquete({ tiquete, tipo = "ingreso", onClose }) {
+/**
+ * @param alCerrarFoco  Adónde devolver el foco al cerrar. Radix atrapa el foco
+ *   mientras el diálogo está montado, así que enfocar desde `onClose` no sirve:
+ *   la trampa lo devuelve. Este handler corre ya sin trampa.
+ */
+function Tiquete({ tiquete, tipo = "ingreso", onClose, alCerrarFoco }) {
   const config = obtenerConfig();
   const ficha = String(tiquete.ficha).padStart(4, "0");
   const barras = calcularBarras(tiquete.ficha, tiquete.placa);
@@ -53,6 +58,12 @@ function Tiquete({ tiquete, tipo = "ingreso", onClose }) {
       <DialogContent
         aria-describedby={undefined}
         showCloseButton={false}
+        onCloseAutoFocus={(evento) => {
+          if (!alCerrarFoco) return;
+
+          evento.preventDefault();
+          alCerrarFoco();
+        }}
         className="justify-items-center border-0 bg-transparent p-0 shadow-none sm:max-w-xs print:static! print:translate-none!"
       >
         <DialogTitle className="sr-only">Tiquete de {tipo}</DialogTitle>

@@ -1,5 +1,6 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { useState } from "react";
 import { expect, it, vi } from "vitest";
 
 import Tiquete from "@/features/tiquetes/Tiquete";
@@ -48,4 +49,33 @@ it("cierra con el botón Cerrar e imprime con el botón Imprimir", async () => {
 
   await usuario.click(screen.getByRole("button", { name: "Cerrar" }));
   expect(alCerrar).toHaveBeenCalled();
+});
+
+it("al cerrar devuelve el foco a donde le digan", async () => {
+  // En el mostrador se encadena una salida tras otra: si el foco no vuelve al
+  // campo, el operario tiene que ir al mouse entre cada vehículo.
+  function Mostrador() {
+    const [abierto, setAbierto] = useState(true);
+
+    return (
+      <>
+        <input aria-label="Ficha" />
+
+        {abierto && (
+          <Tiquete
+            tiquete={TIQUETE}
+            onClose={() => setAbierto(false)}
+            alCerrarFoco={() => screen.getByLabelText("Ficha").focus()}
+          />
+        )}
+      </>
+    );
+  }
+
+  const usuario = userEvent.setup();
+  render(<Mostrador />);
+
+  await usuario.click(screen.getByRole("button", { name: "Cerrar" }));
+
+  await waitFor(() => expect(screen.getByLabelText("Ficha")).toHaveFocus());
 });

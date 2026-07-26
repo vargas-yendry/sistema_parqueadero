@@ -7,14 +7,20 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Input } from "@/interfaz/input";
 import { Label } from "@/interfaz/label";
 
-/** Validación en la frontera: nada sale a la API sin nombre y con cifras negativas. */
+/**
+ * Validación en la frontera.
+ * El precio tiene que ser mayor que cero: un campo vacío llega como "" y
+ * Number("") es 0, así que con .min(0) se colaban productos a precio cero y
+ * sus ventas entraban en cero a la ganancia del mes y a los reportes.
+ * El stock en cero sí es válido: es un producto agotado.
+ */
 const esquemaAccesorio = z.object({
   nombre: z.string().trim().min(1, "El nombre del producto es obligatorio"),
   emoji: z.string().trim(),
-  precio: z.coerce.number().min(0, "El precio no puede ser negativo"),
+  precio: z.coerce.number().positive("El precio debe ser mayor que cero"),
   costo: z.coerce.number().min(0, "El costo no puede ser negativo"),
-  stock: z.coerce.number().min(0, "La cantidad no puede ser negativa"),
-  minStock: z.coerce.number().min(0, "El aviso de stock no puede ser negativo"),
+  stock: z.coerce.number().int().min(0, "La cantidad no puede ser negativa"),
+  minStock: z.coerce.number().int().min(0, "El aviso de stock no puede ser negativo"),
 });
 
 const CAMPOS_NUMERICOS = [

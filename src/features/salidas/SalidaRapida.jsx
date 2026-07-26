@@ -105,10 +105,8 @@ export default function SalidaRapida({ onRefrescar }) {
         setTimeout(() => {
           window.print();
 
-          setTimeout(() => {
-            setTiquete(null);
-            campoFicha.current?.focus();
-          }, 300);
+          // El foco lo devuelve el propio diálogo al desmontarse (alCerrarFoco).
+          setTimeout(() => setTiquete(null), 300);
         }, 500);
       }
 
@@ -263,10 +261,8 @@ export default function SalidaRapida({ onRefrescar }) {
         <Tiquete
           tiquete={tiquete}
           tipo="salida"
-          onClose={() => {
-            setTiquete(null);
-            campoFicha.current?.focus();
-          }}
+          onClose={() => setTiquete(null)}
+          alCerrarFoco={() => campoFicha.current?.focus()}
         />
       )}
     </>

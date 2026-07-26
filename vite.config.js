@@ -38,10 +38,10 @@ export default defineConfig({
       exclude: ["src/interfaz/**", "src/**/*.test.{js,jsx}", "src/main.jsx"],
       // Piso que no baja: se sube a medida que se agregan pruebas, nunca al revés.
       thresholds: {
-        statements: 45,
-        branches: 45,
-        functions: 45,
-        lines: 45,
+        statements: 55,
+        branches: 55,
+        functions: 55,
+        lines: 55,
       },
     },
   },
