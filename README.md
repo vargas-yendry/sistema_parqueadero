@@ -8,8 +8,10 @@ Todo vive en un solo paquete: un `package.json`, un `node_modules`, un lockfile.
 
 ## Requisitos
 
-- Node **>= 22** (la versión de trabajo está en `.nvmrc`)
-- **pnpm** — es el único gestor soportado, no uses npm ni yarn
+- **Node 24.18.0** (LTS Krypton). La versión la fija `.mise.toml`: con
+  [mise](https://mise.jdx.dev) instalado basta `mise install` en la carpeta del repo.
+- **pnpm 11.17.0** — es el único gestor soportado, no uses npm ni yarn. La versión sale del
+  campo `packageManager` del `package.json`, así que pnpm se pone solo en la correcta.
 
 ## Arranque
 

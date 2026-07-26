@@ -1,0 +1,6 @@
+# Versiones de herramientas del proyecto (https://mise.jdx.dev)
+# Node 24 es la línea LTS (Krypton). Se fija exacta: esto se instala en el
+# equipo del parqueadero y el build tiene que salir igual siempre.
+
+[tools]
+node = "24.18.0"
