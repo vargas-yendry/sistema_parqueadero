@@ -63,6 +63,17 @@ export default function HistorialVentas({ ventas, cargando }) {
                     </TableCell>
                   </TableRow>
                 ))}
+
+              {!cargando && ventas.length === 0 && (
+                <TableRow className="hover:bg-transparent">
+                  <TableCell
+                    className={`${CELDA} py-8 text-center text-muted-foreground`}
+                    colSpan={COLUMNAS.length}
+                  >
+                    Todavía no hay ventas
+                  </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </div>

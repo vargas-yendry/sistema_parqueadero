@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, TriangleAlert } from "lucide-react";
+import { PackageOpen, Plus, TriangleAlert } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -145,6 +145,20 @@ export default function Accesorios() {
                 onVender={setEnVenta}
               />
             ))}
+
+          {!consultaProductos.isPending && productos.length === 0 && (
+            <div className="col-span-full flex flex-col items-center gap-3 rounded-lg border border-dashed border-border px-6 py-14 text-center text-muted-foreground">
+              <PackageOpen className="size-9 text-tenue" />
+              <div>
+                <p className="font-medium text-foreground">Todavía no hay productos</p>
+                <p className="text-xs">Agrega el primero con “Nuevo Producto”.</p>
+              </div>
+              <Button variant="outline" size="sm" onClick={() => abrirFormulario()}>
+                <Plus />
+                Nuevo Producto
+              </Button>
+            </div>
+          )}
         </div>
 
         <HistorialVentas ventas={ventas} cargando={consultaVentas.isPending} />
