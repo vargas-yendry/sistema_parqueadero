@@ -6,7 +6,7 @@ DATOS := data
 FECHA := $(shell date +%Y-%m-%dT%H-%M-%S)
 
 .DEFAULT_GOAL := ayuda
-.PHONY: ayuda install dev dev-api dev-ui build app dist lint format test coverage check respaldo clean reset
+.PHONY: ayuda install dev dev-api dev-ui build app dist dist-linux lint format test coverage check respaldo clean reset
 
 ayuda: ## Muestra esta ayuda
 	@echo "Parqueadero Y&G — comandos disponibles:"
@@ -35,6 +35,9 @@ app: build ## Compila y abre la app de escritorio (Electron)
 
 dist: ## Genera el instalador de Windows en instalador/
 	$(PNPM) run dist
+
+dist-linux: build ## Genera el AppImage de Linux en instalador/
+	$(PNPM) exec electron-builder --linux AppImage
 
 lint: ## ESLint con autofix
 	$(PNPM) run lint

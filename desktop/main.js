@@ -13,9 +13,12 @@ const urlDesarrollo = process.env.PARQUEADERO_UI_URL;
 let servidor = null;
 
 function iniciarServidor() {
+  // Siempre el servidor ya empaquetado (dist-servidor/servidor.cjs), nunca el
+  // código fuente: en ESM y sin empaquetar no encuentra sus dependencias dentro
+  // del .asar. Lo genera `pnpm run build:servidor`.
   const rutaServidor = app.isPackaged
-    ? path.join(process.resourcesPath, "app.asar.unpacked", "src", "servidor", "index.js")
-    : path.join(raizProyecto, "src", "servidor", "index.js");
+    ? path.join(process.resourcesPath, "app.asar.unpacked", "dist-servidor", "servidor.cjs")
+    : path.join(raizProyecto, "dist-servidor", "servidor.cjs");
 
   // Instalado, la base de datos no puede vivir dentro de Archivos de programa.
   const carpetaDatos = app.isPackaged

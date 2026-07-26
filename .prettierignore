@@ -5,3 +5,4 @@ coverage
 node_modules
 pnpm-lock.yaml
 Makefile
+dist-servidor

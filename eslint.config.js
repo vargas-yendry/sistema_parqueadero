@@ -17,7 +17,14 @@ const ARCHIVOS_SERVIDOR = [
 
 export default [
   {
-    ignores: ["dist/**", "instalador/**", "data/**", "coverage/**", "node_modules/**"],
+    ignores: [
+      "dist/**",
+      "dist-servidor/**",
+      "instalador/**",
+      "data/**",
+      "coverage/**",
+      "node_modules/**",
+    ],
   },
 
   js.configs.recommended,

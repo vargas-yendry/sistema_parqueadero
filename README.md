@@ -134,9 +134,30 @@ Cada vez que arranca el servidor se crea un respaldo en `data/respaldos/` y se c
 make dist        # genera instalador/ con el .exe (NSIS)
 ```
 
-Se empaqueta la interfaz compilada más el servidor. El servidor corre como proceso hijo y usa
-un módulo nativo (`sqlite3`), así que va fuera del `.asar` — eso está resuelto en
-`electron-builder.yml`; si añades archivos de servidor nuevos, revisa que los cubran sus globs.
+Se empaqueta la interfaz compilada (`dist/`) y el servidor (`dist-servidor/servidor.cjs`).
+
+**El servidor se empaqueta en un solo archivo CommonJS a propósito.** El servidor corre como
+proceso hijo y carga un binario nativo, así que tiene que quedar fuera del `.asar`; pero desde
+una ruta desempaquetada no se puede leer hacia dentro del `.asar`, y con `import` ni siquiera
+funciona el truco que Electron hace para `require`. Un servidor en ESM y sin empaquetar
+arranca la ventana con la API muerta. Al meterlo todo en un CommonJS no queda nada que
+resolver en ejecución.
+
+Por eso `node_modules` no entra al instalador: las dependencias ya están dentro del paquete.
+La única excepción es `sqlite3` (es binario nativo) junto con lo que necesita en ejecución,
+`bindings` y `file-uri-to-path`.
+
+Si algún día el servidor necesita otro módulo nativo, hay que añadirlo a `files` y a
+`asarUnpack` — y comprobarlo **extrayendo el instalador fuera del repo**, porque dentro del
+repo Node encuentra el `node_modules` de al lado y el fallo no se ve.
+
+### Linux
+
+```bash
+make dist-linux   # instalador/parqueadero-yg-<versión>-x86_64.AppImage
+```
+
+El AppImage es un archivo único y ejecutable, sin instalación ni permisos de administrador.
 
 ## Variables de entorno
 

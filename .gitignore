@@ -37,3 +37,6 @@ coverage/
 
 # Canon horneado (regenerable con /rumbo-sync)
 CLAUDE.md
+
+# Servidor empaquetado (lo regenera build:servidor)
+dist-servidor/
