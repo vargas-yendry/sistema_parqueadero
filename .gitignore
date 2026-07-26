@@ -33,3 +33,4 @@ pnpm-debug.log*
 .cache/
 coverage/
 .vitest/
+.impeccable/

@@ -1,0 +1,33 @@
+appId: com.parqueadero.yg
+productName: Parqueadero Y&G
+copyright: Parqueadero Y&G
+
+directories:
+  output: instalador
+
+# Solo entra lo que la app necesita en caliente: el build de la interfaz,
+# el shell de Electron y el servidor con sus rutas por feature.
+files:
+  - dist/**/*
+  - desktop/**/*
+  - src/servidor/**/*
+  - src/features/*/rutas.js
+  - package.json
+
+# El servidor corre como proceso hijo (fork), así que debe quedar fuera del asar,
+# igual que el binario nativo de sqlite3.
+asarUnpack:
+  - src/servidor/**/*
+  - src/features/*/rutas.js
+  - node_modules/sqlite3/**/*
+
+win:
+  target: nsis
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Parqueadero Y&G

@@ -1,3 +1,22 @@
+# Electron y el módulo nativo de sqlite3 esperan un node_modules plano;
+# con enlaces simbólicos el empaquetado del instalador se rompe.
+nodeLinker: hoisted
+
+# Versiones exactas: esto se instala en el equipo del parqueadero,
+# no queremos que un ^ cambie una dependencia entre builds.
+savePrefix: ""
+
+# Scripts de instalación permitidos: binarios de Electron y el nativo de SQLite.
 allowBuilds:
+  "@tailwindcss/oxide": true
   electron: true
   electron-winstaller: true
+  esbuild: true
+  sqlite3: true
+
+# Versiones fijadas a mano tras revisar el registro; se excluyen del gate de antigüedad.
+minimumReleaseAgeExclude:
+  - "@hookform/resolvers@5.5.7"
+  - "@rollup/rollup-linux-x64-gnu@4.62.3"
+  - "@rollup/rollup-win32-x64-msvc@4.62.3"
+  - globals@17.8.0
