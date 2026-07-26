@@ -1,338 +1,258 @@
-import { useState, useRef, useEffect } from "react";
-import axios from "axios";
+import { useMutation } from "@tanstack/react-query";
+import { ArrowDownToLine, Bike, Car, Check, Clock, HardHat, Moon, Sun, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
+import { z } from "zod";
+
+import { api } from "@/api";
+import { obtenerConfig } from "@/features/configuracion/configuracion";
 import Tiquete from "@/features/tiquetes/Tiquete";
-const API = "http://localhost:3333";
+import { formatearFecha, formatearHora, formatearPesos } from "@/formato";
+import { Badge } from "@/interfaz/badge";
+import { Button } from "@/interfaz/button";
+import { Card, CardContent } from "@/interfaz/card";
+import { cn } from "@/interfaz/cn";
+import { Input } from "@/interfaz/input";
 
-function getConfig() {
-  try {
-    const s = localStorage.getItem("configParqueadero");
+const TIPOS = [
+  { valor: "MOTO", etiqueta: "Moto", Icono: Bike },
+  { valor: "CARRO", etiqueta: "Carro", Icono: Car },
+];
 
-    return s
-      ? JSON.parse(s)
-      : {
-          tarifaMoto: 1000,
-          tarifaCarro: 2000
-        };
+const MODALIDADES = [
+  { valor: "HORA", etiqueta: "Hora", Icono: Clock },
+  { valor: "DIA", etiqueta: "Día", Icono: Sun },
+  { valor: "NOCHE", etiqueta: "Noche", Icono: Moon },
+];
 
-  } catch {
-    return {
-      tarifaMoto: 1000,
-      tarifaCarro: 2000
-    };
-  }
-}
+const CANTIDADES_CASCOS = [0, 1, 2, 3, 4];
+
+/** Qué tarifa de la configuración le toca a cada combinación de vehículo y modalidad. */
+const CLAVES_TARIFA = {
+  MOTO: { HORA: "tarifaMoto", DIA: "tarifaMotoDia", NOCHE: "tarifaMotoNoche" },
+  CARRO: { HORA: "tarifaCarro", DIA: "tarifaCarroDia", NOCHE: "tarifaCarroNoche" },
+};
+
+const esquemaPlaca = z.string().min(1, "Escribe la placa del vehículo");
 
 export default function IngresoRapido({ onSuccess }) {
   const [placa, setPlaca] = useState("");
   const [tipo, setTipo] = useState("MOTO");
   const [cascos, setCascos] = useState(0);
   const [modalidad, setModalidad] = useState("HORA");
-  const [loading, setLoading] = useState(false);
   const [ticket, setTicket] = useState(null);
-  const [mostrarFormulario, setMostrarFormulario] = useState(false);
-  const [flash, setFlash] = useState(null); // "ok" | "err"
-  const [mensajeError, setMensajeError] = useState("");
-  const inputRef = useRef(null);
+  const [errorPlaca, setErrorPlaca] = useState("");
+  const [aviso, setAviso] = useState(null); // "exito" | "error"
+  const campoPlaca = useRef(null);
 
+  // La placa es lo primero que se digita en el mostrador: el cursor arranca ahí.
   useEffect(() => {
-    inputRef.current?.focus();
+    campoPlaca.current?.focus();
   }, []);
 
-  const registrar = async () => {
-    const p = placa.trim().toUpperCase();
-    if (!p) { inputRef.current?.focus(); return; }
-    setLoading(true);
-    try {
-      const r = await axios.post(
-  `${API}/api/ingresos`,
-  {
-    placa: p,
-    tipo,
-    cascos: parseInt(cascos),
-    modalidad
-  }
-);
-      const now = new Date();
+  const registro = useMutation({
+    mutationFn: async (ingreso) => (await api.post("/ingresos", ingreso)).data,
 
-const config = getConfig();
+    onSuccess: (datos, ingreso) => {
+      const ahora = new Date();
+      const config = obtenerConfig();
 
-let tarifaActual = 0;
-
-if (tipo === "MOTO") {
-
-  if (modalidad === "HORA")
-    tarifaActual = Number(config.tarifaMoto);
-
-  if (modalidad === "DIA")
-    tarifaActual = Number(config.tarifaMotoDia || 0);
-
-  if (modalidad === "NOCHE")
-    tarifaActual = Number(config.tarifaMotoNoche || 0);
-
-} else {
-
-  if (modalidad === "HORA")
-    tarifaActual = Number(config.tarifaCarro);
-
-  if (modalidad === "DIA")
-    tarifaActual = Number(config.tarifaCarroDia || 0);
-
-  if (modalidad === "NOCHE")
-    tarifaActual = Number(config.tarifaCarroNoche || 0);
-
-}
-      
       setTicket({
-  ficha: parseInt(r.data.ficha.replace("F-", "")),
-  placa: p,
-  modalidad,
-  tipo,
-  cascos: parseInt(cascos),
-  fecha: now.toLocaleDateString("es-CO"),
-  hora: now.toLocaleTimeString("es-CO", {
-    hour: "2-digit",
-    minute: "2-digit"
-  }),
-  tarifa: new Intl.NumberFormat(
-    "es-CO",
-    {
-      style: "currency",
-      currency: "COP",
-      maximumFractionDigits: 0
-    }
-  ).format(tarifaActual),
-});
+        ficha: Number.parseInt(datos.ficha.replace("F-", ""), 10),
+        placa: ingreso.placa,
+        modalidad: ingreso.modalidad,
+        tipo: ingreso.tipo,
+        cascos: ingreso.cascos,
+        fecha: formatearFecha(ahora),
+        hora: formatearHora(ahora),
+        tarifa: formatearPesos(config[CLAVES_TARIFA[ingreso.tipo][ingreso.modalidad]]),
+      });
 
-setTimeout(() => {
+      // El tiquete alcanza a pintarse, sale por la impresora y se cierra solo.
+      setTimeout(() => {
+        window.print();
+        setTimeout(() => setTicket(null), 300);
+      }, 500);
 
-  window.print();
-
-  setTimeout(() => {
-
-    setTicket(null);
-
-  }, 300);
-
-}, 500);
-      setFlash("ok");
+      toast.success(`Ingreso registrado • ${datos.ficha}`);
+      setAviso("exito");
       setPlaca("");
-setCascos(0);
-setMostrarFormulario(false);
+      setCascos(0);
       onSuccess?.();
-      setTimeout(() => { setFlash(null); inputRef.current?.focus(); }, 3000);
-    } catch (error) {
 
-  const data = error.response?.data;
+      setTimeout(() => {
+        setAviso(null);
+        campoPlaca.current?.focus();
+      }, 3000);
+    },
 
-  if (data?.ficha) {
-    setMensajeError(
-      `${data.mensaje} • ${data.ficha}`
-    );
-  } else {
-    setMensajeError("Error al registrar ingreso");
-  }
+    onError: (error) => {
+      const datos = error.response?.data;
 
-  setFlash("err");
+      toast.error(
+        datos?.ficha ? `${datos.mensaje} • ${datos.ficha}` : "Error al registrar ingreso",
+      );
+      setAviso("error");
 
-  setTimeout(() => {
-    setFlash(null);
-    setMensajeError("");
-  }, 4000);
-} finally {
-      setLoading(false);
+      setTimeout(() => setAviso(null), 4000);
+    },
+  });
+
+  const registrar = () => {
+    const validacion = esquemaPlaca.safeParse(placa.trim().toUpperCase());
+
+    if (!validacion.success) {
+      setErrorPlaca(validacion.error.issues[0].message);
+      campoPlaca.current?.focus();
+      return;
     }
+
+    setErrorPlaca("");
+    registro.mutate({ placa: validacion.data, tipo, cascos, modalidad });
   };
 
-  const onKey = (e) => { if (e.key === "Enter") registrar(); };
+  const mostrarFormulario = placa.trim() !== "";
 
   return (
     <>
-      <div className="card" style={{
-        border: flash === "ok" ? "1.5px solid rgba(0,230,118,0.5)" : flash === "err" ? "1.5px solid rgba(239,83,80,0.5)" : "1px solid var(--border)",
-        transition: "border-color 0.3s",
-      }}>
-        {/* Header */}
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
-          <div style={{
-            width: 32, height: 32, background: "rgba(29,111,232,0.15)",
-            border: "1px solid rgba(29,111,232,0.3)",
-            borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16,
-          }}>⬇</div>
-          <div>
-            <div style={{ fontFamily: "var(--font-display)", fontSize: 15, fontWeight: 700, letterSpacing: 0.8 }}>
-              INGRESO RÁPIDO
-            </div>
-            <div style={{ fontSize: 10, color: "var(--text-muted)" }}>Placa + Enter</div>
-          </div>
-          {flash === "ok" && (
-            <span className="badge badge-green" style={{ marginLeft: "auto" }}>✓ OK</span>
-          )}
-          {flash === "err" && (
-            <span className="badge badge-red" style={{ marginLeft: "auto" }}>✗ Error</span>
-          )}
-        </div>
-
-        {/* Placa input */}
-        <input
-          ref={inputRef}
-          type="text"
-          placeholder="Placa: ABC123"
-          value={placa}
-          onChange={e => {
-  const valor = e.target.value.toUpperCase();
-  setPlaca(valor);
-  setMostrarFormulario(valor.trim() !== "");
-}}
-          onKeyDown={onKey}
-          maxLength={8}
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 18,
-            fontWeight: 700,
-            letterSpacing: 3,
-            textAlign: "center",
-            padding: "14px",
-            marginBottom: 10,
-          }}
-        />
-
-{mostrarFormulario && (
-  <>
-  
-{mensajeError && (
-  <div
-    style={{
-      marginBottom: 10,
-      padding: "10px",
-      borderRadius: 8,
-      background: "rgba(239,83,80,0.12)",
-      border: "1px solid rgba(239,83,80,0.3)",
-      color: "#ff8a80",
-      fontSize: 12,
-      fontWeight: 600,
-      textAlign: "center"
-    }}
-  >
-    ⚠ {mensajeError}
-  </div>
-)}
-
-        {/* Tipo vehículo */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 10 }}>
-          {["MOTO", "CARRO"].map(t => (
-            <button
-              key={t}
-              onClick={() => { setTipo(t); inputRef.current?.focus(); }}
-              style={{
-                padding: "10px",
-                background: tipo === t ? (t === "MOTO" ? "rgba(0,230,118,0.15)" : "rgba(59,138,255,0.15)") : "var(--bg-deep)",
-                border: `1.5px solid ${tipo === t ? (t === "MOTO" ? "rgba(0,230,118,0.4)" : "rgba(59,138,255,0.4)") : "var(--border)"}`,
-                color: tipo === t ? (t === "MOTO" ? "var(--accent-green)" : "var(--accent-blue-bright)") : "var(--text-secondary)",
-                borderRadius: "var(--radius-sm)",
-                fontWeight: 600,
-                fontSize: 13,
-              }}
-            >
-              {t === "MOTO" ? "🏍 Moto" : "🚗 Carro"}
-            </button>
-
-          ))}
-        </div>
-
-        <div
-style={{
-display:"grid",
-gridTemplateColumns:"1fr 1fr 1fr",
-gap:8,
-marginBottom:12
-}}
->
-
-{["HORA","DIA","NOCHE"].map(m=>(
-
-<button
-key={m}
-onClick={()=>setModalidad(m)}
-style={{
-  padding: "10px",
-  fontWeight: 700,
-  color:
-    modalidad === m
-      ? "#ffffff"
-      : "#dbeafe",
-  background:
-    modalidad === m
-      ? "rgba(0,230,118,0.18)"
-      : "var(--bg-deep)",
-  border:
-    modalidad === m
-      ? "1px solid #00e676"
-      : "1px solid var(--border)"
-}}
->
-
-{m==="HORA" && "⏱ Hora"}
-{m==="DIA" && "🌞 Día"}
-{m==="NOCHE" && "🌙 Noche"}
-
-</button>
-
-))}
-
-</div>
-
-        {/* Cascos (solo para moto) */}
-        {tipo === "MOTO" && (
-          <div style={{ marginBottom: 12 }}>
-            <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 6, fontWeight: 600, letterSpacing: 0.5 }}>
-              🪖 CASCOS
-            </div>
-            <div style={{ display: "flex", gap: 6 }}>
-              {[0, 1, 2, 3, 4].map(n => (
-                <button
-                  key={n}
-                  onClick={() => { setCascos(n); inputRef.current?.focus(); }}
-                  style={{
-                    flex: 1,
-                    padding: "8px 4px",
-                    background: cascos === n ? "rgba(124,77,255,0.2)" : "var(--bg-deep)",
-                    border: `1.5px solid ${cascos === n ? "rgba(124,77,255,0.5)" : "var(--border)"}`,
-                    color: cascos === n ? "#b388ff" : "var(--text-secondary)",
-                    borderRadius: "var(--radius-sm)",
-                    fontWeight: 700,
-                    fontSize: 14,
-                  }}
-                >
-                  {n}
-                </button>
-              ))}
-            </div>
-          </div>
+      <Card
+        className={cn(
+          "gap-0 py-4 transition-colors",
+          aviso === "exito" && "border-exito/50",
+          aviso === "error" && "border-destructive/50",
         )}
+      >
+        <CardContent className="px-4">
+          <div className="mb-4 flex items-center gap-2">
+            <div className="flex size-8 items-center justify-center rounded-lg border border-primary/30 bg-primary/15">
+              <ArrowDownToLine className="size-4 text-azul-vivo" />
+            </div>
 
-        {/* Submit */}
-        <button
-          className="btn-primary"
-          onClick={registrar}
-          disabled={loading}
-          style={{
-            width: "100%",
-            padding: "13px",
-            fontSize: 14,
-            justifyContent: "center",
-            letterSpacing: 0.5,
-            opacity: loading ? 0.7 : 1,
-          }}
-        >
-          {loading ? "Registrando..." : "⬇ Registrar Ingreso"}
-            </button>
-              </>
-)}
-      </div>
-      
-      
+            <div>
+              <div className="font-display text-[15px] font-bold tracking-[0.8px]">
+                INGRESO RÁPIDO
+              </div>
+              <div className="text-[10px] text-muted-foreground">Placa + Enter</div>
+            </div>
 
-      {/* Tiquete modal */}
+            {aviso === "exito" && (
+              <Badge className="ml-auto bg-exito-tenue text-background">
+                <Check />
+                OK
+              </Badge>
+            )}
+
+            {aviso === "error" && (
+              <Badge variant="destructive" className="ml-auto">
+                <X />
+                Error
+              </Badge>
+            )}
+          </div>
+
+          <Input
+            ref={campoPlaca}
+            type="text"
+            aria-label="Placa"
+            aria-invalid={errorPlaca !== ""}
+            placeholder="Placa: ABC123"
+            value={placa}
+            maxLength={8}
+            onChange={(evento) => {
+              setPlaca(evento.target.value.toUpperCase());
+              setErrorPlaca("");
+            }}
+            onKeyDown={(evento) => {
+              if (evento.key === "Enter") registrar();
+            }}
+            className="h-auto py-3.5 text-center font-mono text-lg font-bold tracking-[3px] md:text-lg"
+          />
+
+          {errorPlaca && (
+            <p className="mt-1.5 text-center text-xs font-semibold text-destructive">
+              {errorPlaca}
+            </p>
+          )}
+
+          {mostrarFormulario && (
+            <div className="mt-2.5 motion-safe:animate-in motion-safe:duration-200 motion-safe:fade-in motion-safe:slide-in-from-bottom-2">
+              <div className="mb-2.5 grid grid-cols-2 gap-2">
+                {TIPOS.map(({ valor, etiqueta, Icono }) => (
+                  <Button
+                    key={valor}
+                    type="button"
+                    variant={tipo === valor ? "default" : "outline"}
+                    onClick={() => {
+                      setTipo(valor);
+                      campoPlaca.current?.focus();
+                    }}
+                  >
+                    <Icono />
+                    {etiqueta}
+                  </Button>
+                ))}
+              </div>
+
+              <div className="mb-3 grid grid-cols-3 gap-2">
+                {MODALIDADES.map(({ valor, etiqueta, Icono }) => (
+                  <Button
+                    key={valor}
+                    type="button"
+                    variant={modalidad === valor ? "default" : "outline"}
+                    onClick={() => setModalidad(valor)}
+                  >
+                    <Icono />
+                    {etiqueta}
+                  </Button>
+                ))}
+              </div>
+
+              {tipo === "MOTO" && (
+                <div className="mb-3">
+                  <div className="mb-1.5 flex items-center gap-1 text-[11px] font-semibold tracking-[0.5px] text-muted-foreground">
+                    <HardHat className="size-3" />
+                    CASCOS
+                  </div>
+
+                  <div className="flex gap-1.5">
+                    {CANTIDADES_CASCOS.map((cantidad) => (
+                      <Button
+                        key={cantidad}
+                        type="button"
+                        variant={cascos === cantidad ? "default" : "outline"}
+                        className="flex-1 font-bold"
+                        onClick={() => {
+                          setCascos(cantidad);
+                          campoPlaca.current?.focus();
+                        }}
+                      >
+                        {cantidad}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <Button
+                size="lg"
+                className="h-11 w-full"
+                onClick={registrar}
+                disabled={registro.isPending}
+              >
+                {registro.isPending ? (
+                  "Registrando..."
+                ) : (
+                  <>
+                    <ArrowDownToLine />
+                    Registrar Ingreso
+                  </>
+                )}
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {ticket && <Tiquete ticket={ticket} tipo="ingreso" onClose={() => setTicket(null)} />}
     </>
   );

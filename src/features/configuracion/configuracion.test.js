@@ -12,7 +12,10 @@ describe("obtenerConfig", () => {
   });
 
   it("completa con los valores por defecto lo que falte en lo guardado", () => {
-    window.localStorage.setItem("configParqueadero", JSON.stringify({ nombre: "Parqueadero Central" }));
+    window.localStorage.setItem(
+      "configParqueadero",
+      JSON.stringify({ nombre: "Parqueadero Central" }),
+    );
 
     const config = obtenerConfig();
 

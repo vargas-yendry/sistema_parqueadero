@@ -1,69 +1,93 @@
-import { useState, useEffect } from "react";
-import BarraLateral from "@/navegacion/BarraLateral";
-import Tablero from "@/features/tablero/Tablero";
-import Mensualidades from "@/features/mensualidades/Mensualidades";
+import { useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
+import { toast } from "sonner";
+
+import { api } from "@/api";
 import Accesorios from "@/features/accesorios/Accesorios";
-import Reportes from "@/features/reportes/Reportes";
 import Configuracion from "@/features/configuracion/Configuracion";
+import Mensualidades from "@/features/mensualidades/Mensualidades";
+import Reportes from "@/features/reportes/Reportes";
+import Tablero from "@/features/tablero/Tablero";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/interfaz/alert-dialog";
+import BarraLateral from "@/navegacion/BarraLateral";
+
+const VISTAS = {
+  dashboard: Tablero,
+  mensualidades: Mensualidades,
+  accesorios: Accesorios,
+  reportes: Reportes,
+};
 
 function App() {
   const [vista, setVista] = useState("dashboard");
-  const [configOpen, setConfigOpen] = useState(false);
+  const [configAbierta, setConfigAbierta] = useState(false);
+  const [confirmandoNuevoDia, setConfirmandoNuevoDia] = useState(false);
+  const clienteConsultas = useQueryClient();
 
-const handleVista = async (v) => {
-
-  if (v === "nuevoDia") {
-
-    const confirmar = window.confirm(
-      "¿Deseas iniciar un nuevo día y limpiar el Tablero?"
-    );
-
-    if (!confirmar) return;
-
-    try {
-
-      await fetch(
-        "http://localhost:3333/api/nuevo-dia",
-        {
-          method: "POST"
-        }
-      );
-
-      alert("Nuevo día iniciado correctamente");
-
-      setVista("dashboard");
-
-    } catch (error) {
-
-      alert("Error iniciando nuevo día");
-
+  const cambiarVista = (destino) => {
+    if (destino === "nuevoDia") {
+      setConfirmandoNuevoDia(true);
+      return;
     }
 
-    return;
-  }
+    if (destino === "configuracion") {
+      setConfigAbierta(true);
+      return;
+    }
 
-  if (v === "configuracion") {
+    setVista(destino);
+  };
 
-    setConfigOpen(true);
+  const iniciarNuevoDia = async () => {
+    try {
+      await api.post("/nuevo-dia");
 
-  } else {
+      // El día nuevo cambia todo lo que hay en pantalla.
+      await clienteConsultas.invalidateQueries();
 
-    setVista(v);
+      toast.success("Nuevo día iniciado correctamente");
+      setVista("dashboard");
+    } catch {
+      toast.error("No se pudo iniciar el nuevo día");
+    }
+  };
 
-  }
-
-};
+  const VistaActual = VISTAS[vista] ?? Tablero;
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh", background: "var(--bg-deep)" }}>
-      <BarraLateral vista={vista} setVista={handleVista} />
-      <main style={{ flex: 1, overflow: "auto", minWidth: 0 }}>
-        {vista === "dashboard" && <Tablero />}
-        {vista === "mensualidades" && <Mensualidades />}
-        {vista === "accesorios" && <Accesorios />}
-        {vista === "reportes" && <Reportes />}
+    <div className="flex h-dvh bg-background">
+      <BarraLateral vista={vista} setVista={cambiarVista} />
+
+      <main className="min-w-0 flex-1 overflow-auto">
+        <VistaActual />
       </main>
-      {configOpen && <Configuracion onClose={() => setConfigOpen(false)} />}
+
+      {configAbierta && <Configuracion onClose={() => setConfigAbierta(false)} />}
+
+      <AlertDialog open={confirmandoNuevoDia} onOpenChange={setConfirmandoNuevoDia}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Iniciar un nuevo día?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Se limpia el tablero y las casillas quedan libres. Los vehículos que sigan adentro
+              dejarán de aparecer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={iniciarNuevoDia}>Iniciar nuevo día</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

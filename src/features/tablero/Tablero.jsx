@@ -1,135 +1,127 @@
-import { useState, useEffect, useCallback } from "react";
-import axios from "axios";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { ArrowUpRight, Banknote, Car, TrendingUp } from "lucide-react";
+
+import { api } from "@/api";
 import IngresoRapido from "@/features/ingresos/IngresoRapido";
 import SalidaRapida from "@/features/salidas/SalidaRapida";
 import GrillaParqueo from "@/features/tablero/GrillaParqueo";
+import { formatearPesos } from "@/formato";
+import { Card, CardContent } from "@/interfaz/card";
+import { cn } from "@/interfaz/cn";
+import { Skeleton } from "@/interfaz/skeleton";
 
-const API = "http://localhost:3333";
+/** El tablero queda abierto en el mostrador durante la jornada: se refresca solo. */
+const INTERVALO_REFRESCO = 10_000;
 
-function getConfig() {
-  try {
-    const s = localStorage.getItem("configParqueadero");
+const ESTADISTICAS_VACIAS = {
+  vehiculosHoy: 0,
+  ingresosHoy: 0,
+  salidasHoy: 0,
+  gananciaNeta: 0,
+};
 
-    return s
-      ? JSON.parse(s)
-      : { nombre: "Parqueadero Y&G" };
+function TarjetaEstadistica({ etiqueta, valor, Icono, color, retraso, cargando }) {
+  return (
+    <Card
+      className={cn(
+        "gap-0 py-4 motion-safe:animate-in motion-safe:duration-200 motion-safe:fill-mode-backwards motion-safe:fade-in motion-safe:slide-in-from-bottom-2",
+        retraso,
+      )}
+    >
+      <CardContent className="flex items-start justify-between px-4">
+        <div>
+          <div className="mb-2 text-[11px] font-semibold tracking-[0.8px] text-muted-foreground uppercase">
+            {etiqueta}
+          </div>
 
-  } catch {
-    return { nombre: "Parqueadero Y&G" };
-  }
+          {cargando ? (
+            <Skeleton className="h-8 w-28" />
+          ) : (
+            <div className={cn("font-display text-[26px] font-bold", color)}>{valor}</div>
+          )}
+        </div>
+
+        <Icono className={cn("size-[22px] opacity-70", color)} />
+      </CardContent>
+    </Card>
+  );
 }
 
 export default function Tablero() {
-  const [config, setConfig] = useState(getConfig());
-  const [vehiculos, setVehiculos] = useState([]);
-  const [stats, setStats] = useState({ vehiculosHoy: 0, ingresosHoy: 0, salidasHoy: 0, gananciaNeta: 0 });
-  const [loading, setLoading] = useState(true);
+  const clienteConsultas = useQueryClient();
 
-  const cargar = useCallback(async () => {
-  try {
+  const consultaVehiculos = useQuery({
+    queryKey: ["vehiculos"],
+    queryFn: async () => (await api.get("/vehiculos")).data,
+    refetchInterval: INTERVALO_REFRESCO,
+  });
 
-    const vehiculosRes = await axios.get(
-      `${API}/api/vehiculos`
-    );
+  const consultaEstadisticas = useQuery({
+    queryKey: ["salidas", "estadisticas"],
+    queryFn: async () => (await api.get("/salidas/estadisticas")).data,
+    refetchInterval: INTERVALO_REFRESCO,
+  });
 
-    setVehiculos(vehiculosRes.data);
+  const estadisticas = consultaEstadisticas.data ?? ESTADISTICAS_VACIAS;
 
-    const statsRes = await axios.get(
-      `${API}/api/salidas/estadisticas`
-    );
-
-    setStats(statsRes.data);
-
-  } catch (error) {
-
-    console.log(error);
-
-  } finally {
-
-    setLoading(false);
-
-  }
-}, []);
-
-  useEffect(() => {
-
-  cargar();
-
-  const interval = setInterval(
-    cargar,
-    10000
-  );
-
-  const actualizarConfig = () => {
-    setConfig(getConfig());
+  const refrescar = () => {
+    clienteConsultas.invalidateQueries({ queryKey: ["vehiculos"] });
+    clienteConsultas.invalidateQueries({ queryKey: ["salidas", "estadisticas"] });
   };
 
-  window.addEventListener(
-    "configActualizada",
-    actualizarConfig
-  );
-
-  return () => {
-
-    clearInterval(interval);
-
-    window.removeEventListener(
-      "configActualizada",
-      actualizarConfig
-    );
-
-  };
-
-}, [cargar]);
-
-  
-
-  const fmt = (n) => new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 }).format(n);
-
-  const STATS = [
-    { label: "Vehículos Hoy", value: stats.vehiculosHoy, icon: "🚗", color: "var(--accent-blue-bright)" },
-    { label: "Ingresos Hoy", value: fmt(stats.ingresosHoy), icon: "💰", color: "var(--accent-green)" },
-    { label: "Salidas Hoy", value: stats.salidasHoy, icon: "↗", color: "var(--accent-amber)" },
-    { label: "Ganancia Neta", value: fmt(stats.gananciaNeta), icon: "📈", color: "#b388ff" },
+  const tarjetas = [
+    {
+      etiqueta: "Vehículos Hoy",
+      valor: estadisticas.vehiculosHoy,
+      Icono: Car,
+      color: "text-azul-vivo",
+      retraso: "motion-safe:delay-0",
+    },
+    {
+      etiqueta: "Ingresos Hoy",
+      valor: formatearPesos(estadisticas.ingresosHoy),
+      Icono: Banknote,
+      color: "text-exito",
+      retraso: "motion-safe:delay-75",
+    },
+    {
+      etiqueta: "Salidas Hoy",
+      valor: estadisticas.salidasHoy,
+      Icono: ArrowUpRight,
+      color: "text-alerta",
+      retraso: "motion-safe:delay-150",
+    },
+    {
+      etiqueta: "Ganancia Neta",
+      valor: formatearPesos(estadisticas.gananciaNeta),
+      Icono: TrendingUp,
+      color: "text-violeta",
+      retraso: "motion-safe:delay-200",
+    },
   ];
 
   return (
-    <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: 24 }}>
-
-      {/* Header ocultado para ganar espacio */}
-    <div style={{ height: 0 }} />
-
-      {/* Stats */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 14 }}>
-        {STATS.map((s, i) => (
-          <div key={i} className="card fade-up" style={{
-            animationDelay: `${i * 0.06}s`,
-            border: `1px solid var(--border)`,
-          }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-              <div>
-                <div style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 600, letterSpacing: 0.8, textTransform: "uppercase", marginBottom: 8 }}>
-                  {s.label}
-                </div>
-                <div style={{ fontFamily: "var(--font-display)", fontSize: 26, fontWeight: 700, color: s.color }}>
-                  {s.value}
-                </div>
-              </div>
-              <div style={{ fontSize: 22, opacity: 0.7 }}>{s.icon}</div>
-            </div>
-          </div>
+    <div className="flex flex-col gap-6 p-6">
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-3.5">
+        {tarjetas.map((tarjeta) => (
+          <TarjetaEstadistica
+            key={tarjeta.etiqueta}
+            {...tarjeta}
+            cargando={consultaEstadisticas.isPending}
+          />
         ))}
       </div>
 
-      {/* Main grid: parking + forms */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: 20, alignItems: "start" }}>
-        {/* Left: parking grid */}
-        <GrillaParqueo vehiculos={vehiculos} loading={loading} onRefresh={cargar} />
+      <div className="grid grid-cols-[1fr_340px] items-start gap-5">
+        <GrillaParqueo
+          vehiculos={consultaVehiculos.data ?? []}
+          loading={consultaVehiculos.isPending}
+          onRefresh={refrescar}
+        />
 
-        {/* Right: ingreso + salida */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          <IngresoRapido onSuccess={cargar} />
-          <SalidaRapida onSuccess={cargar} />
+        <div className="flex flex-col gap-4">
+          <IngresoRapido onSuccess={refrescar} />
+          <SalidaRapida onSuccess={refrescar} />
         </div>
       </div>
     </div>

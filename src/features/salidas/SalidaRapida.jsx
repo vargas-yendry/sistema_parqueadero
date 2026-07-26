@@ -1,265 +1,272 @@
-import { useState, useRef, useEffect } from "react";
-import axios from "axios";
-import Tiquete from "@/features/tiquetes/Tiquete";
+import { useMutation } from "@tanstack/react-query";
+import { ArrowUpFromLine, Check, Loader2, Printer, Search } from "lucide-react";
+import { useRef, useState } from "react";
+import { toast } from "sonner";
 
-const API = "http://localhost:3333";
+import { api } from "@/api";
+import { obtenerConfig } from "@/features/configuracion/configuracion";
+import Tiquete from "@/features/tiquetes/Tiquete";
+import { formatearFecha, formatearHora, formatearPesos } from "@/formato";
+import { Badge } from "@/interfaz/badge";
+import { Button } from "@/interfaz/button";
+import { Card, CardContent } from "@/interfaz/card";
+import { cn } from "@/interfaz/cn";
+import { Input } from "@/interfaz/input";
+
+/** El cobro lo recalcula el servidor: se le mandan las tarifas guardadas en este equipo. */
+function tarifasVigentes() {
+  const config = obtenerConfig();
+
+  return {
+    tarifaMoto: config.tarifaMoto,
+    tarifaCarro: config.tarifaCarro,
+    tarifaMotoDia: config.tarifaMotoDia,
+    tarifaCarroDia: config.tarifaCarroDia,
+    tarifaMotoNoche: config.tarifaMotoNoche,
+    tarifaCarroNoche: config.tarifaCarroNoche,
+  };
+}
+
+/** El operario digita "8": la ficha guardada es "F-0008". */
+function fichaCompleta(numero) {
+  return `F-${String(Number.parseInt(numero, 10)).padStart(4, "0")}`;
+}
+
+function numeroDeFicha(ficha) {
+  return Number.parseInt(String(ficha).replace("F-", ""), 10) || 0;
+}
+
+function tiempoLegible(minutos) {
+  if (minutos < 60) {
+    return `${minutos} min`;
+  }
+
+  return `${Math.floor(minutos / 60)}h ${minutos % 60}m`;
+}
+
+function tiqueteDeSalida(vehiculo) {
+  const ahora = new Date();
+  const config = obtenerConfig();
+
+  // En el papel siempre va la tarifa por hora, incluso en DIA y NOCHE (así se imprime desde v2).
+  const tarifa = vehiculo.tipo === "CARRO" ? config.tarifaCarro : config.tarifaMoto;
+
+  return {
+    ficha: numeroDeFicha(vehiculo.ficha),
+    placa: vehiculo.placa,
+    modalidad: vehiculo.modalidad,
+    tipo: vehiculo.tipo,
+    cascos: vehiculo.cascos || 0,
+    fecha: formatearFecha(ahora),
+    hora: formatearHora(vehiculo.horaIngreso || ahora),
+    horaSalida: formatearHora(ahora),
+    tiempo: tiempoLegible(vehiculo.minutos || 0),
+    tarifa: formatearPesos(tarifa),
+    total: formatearPesos(vehiculo.valor),
+  };
+}
 
 export default function SalidaRapida({ onSuccess }) {
   const [ficha, setFicha] = useState("");
-  const [datos, setDatos] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [ticketSalida, setTicketSalida] = useState(null);
-  const inputRef = useRef(null);
-  const botonSinTicketRef = useRef(null);
+  const [tiquete, setTiquete] = useState(null);
 
-  useEffect(() => { /* No autofocus here — IngresoRapido has it */ }, []);
+  // El foco de arranque es de IngresoRapido: esta tarjeta no se lo quita.
+  const campoFicha = useRef(null);
+  const botonSinTiquete = useRef(null);
 
-  const buscar = async () => {
-    const f = ficha.trim();
-    if (!f) return;
-    setLoading(true);
-    try {
-      const fichaCompleta = `F-${String(parseInt(f)).padStart(4, "0")}`;
-      const cfg = JSON.parse(
-  localStorage.getItem("configParqueadero") || "{}"
-);
+  const busqueda = useMutation({
+    mutationFn: async (numero) =>
+      (await api.post("/salidas/buscar", { ficha: fichaCompleta(numero), ...tarifasVigentes() }))
+        .data,
 
-const r = await axios.post(
-  `${API}/api/salidas/buscar`,
-  {
-    ficha: fichaCompleta,
+    onSuccess: () => {
+      // El botón todavía no está pintado cuando responde el servidor.
+      setTimeout(() => botonSinTiquete.current?.focus(), 100);
+    },
 
-    tarifaMoto: Number(cfg.tarifaMoto || 1000),
-    tarifaCarro: Number(cfg.tarifaCarro || 2000),
-
-    tarifaMotoDia: Number(cfg.tarifaMotoDia || 8000),
-    tarifaCarroDia: Number(cfg.tarifaCarroDia || 15000),
-
-    tarifaMotoNoche: Number(cfg.tarifaMotoNoche || 5000),
-    tarifaCarroNoche: Number(cfg.tarifaCarroNoche || 10000)
-  }
-);
-      setDatos(r.data);
-
-setTimeout(() => {
-  botonSinTicketRef.current?.focus();
-}, 100);
-    } catch {
-      setDatos(null);
-      // show inline error
+    onError: (error) => {
+      toast.error(error.response?.data?.mensaje ?? "Ficha no encontrada");
       setFicha("");
-      inputRef.current?.focus();
-    } finally {
-      setLoading(false);
-    }
-  };
+      campoFicha.current?.focus();
+    },
+  });
 
-  const finalizar = async (imprimirTicket) => {
-    if (!datos) return;
-    try {
-      const cfg = JSON.parse(
-  localStorage.getItem("configParqueadero") || "{}"
-);
+  const datos = busqueda.data ?? null;
 
-await axios.post(
-  `${API}/api/salidas/finalizar`,
-  {
-    id: datos.id,
+  const salida = useMutation({
+    mutationFn: async ({ vehiculo }) =>
+      (await api.post("/salidas/finalizar", { id: vehiculo.id, ...tarifasVigentes() })).data,
 
-    tarifaMoto: Number(cfg.tarifaMoto || 1000),
-    tarifaCarro: Number(cfg.tarifaCarro || 2000),
+    onSuccess: (_respuesta, { vehiculo, conTiquete }) => {
+      if (conTiquete) {
+        setTiquete(tiqueteDeSalida(vehiculo));
 
-    tarifaMotoDia: Number(cfg.tarifaMotoDia || 8000),
-    tarifaCarroDia: Number(cfg.tarifaCarroDia || 15000),
-
-    tarifaMotoNoche: Number(cfg.tarifaMotoNoche || 5000),
-    tarifaCarroNoche: Number(cfg.tarifaCarroNoche || 10000)
-  }
-);
-      if (imprimirTicket) {
-        const now = new Date();
-        const mins = datos.minutos || 0;
-
-        const cfg = JSON.parse(
-  localStorage.getItem("configParqueadero")
-  || "{}"
-);
-
-const tarifaActual =
-  datos.tipo === "CARRO"
-    ? Number(cfg.tarifaCarro || 2000)
-    : Number(cfg.tarifaMoto || 1000);
-        
-        setTicketSalida({
-          ficha: parseInt(datos.ficha.replace("F-", "")),
-          placa: datos.placa,
-          modalidad: datos.modalidad,
-          tipo: datos.tipo,
-          cascos: datos.cascos || 0,
-          fecha: now.toLocaleDateString("es-CO"),
-          hora: new Date(datos.horaIngreso || now).toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" }),
-          horaSalida: now.toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" }),
-          tiempo: mins < 60 ? `${mins} min` : `${Math.floor(mins / 60)}h ${mins % 60}m`,
-          tarifa: `$${tarifaActual.toLocaleString("es-CO")}`,
-          total: `$${Number(datos.valor || 0).toLocaleString("es-CO")}`,
-        });
-
+        // El tiquete alcanza a pintarse, sale por la impresora y se cierra solo.
         setTimeout(() => {
+          window.print();
 
-  window.print();
-
-  setTimeout(() => {
-
-    setTicketSalida(null);
-    inputRef.current?.focus();
-
-  }, 300);
-
+          setTimeout(() => {
+            setTiquete(null);
+            campoFicha.current?.focus();
+          }, 300);
         }, 500);
-        
       }
+
+      toast.success("Salida registrada");
       setFicha("");
-      setDatos(null);
+      busqueda.reset();
       onSuccess?.();
-      if (!imprimirTicket) inputRef.current?.focus();
-    } catch {
-      alert("Error al finalizar salida");
+
+      if (!conTiquete) {
+        campoFicha.current?.focus();
+      }
+    },
+
+    onError: () => toast.error("Error al finalizar salida"),
+  });
+
+  const buscar = () => {
+    const numero = ficha.trim();
+
+    if (numero) {
+      busqueda.mutate(numero);
     }
   };
 
-  const fmt = (n) => `$${Number(n || 0).toLocaleString("es-CO")}`;
+  const finalizar = (conTiquete) => {
+    if (datos) {
+      salida.mutate({ vehiculo: datos, conTiquete });
+    }
+  };
 
   return (
     <>
-      <div className="card" style={{ border: datos ? "1.5px solid rgba(255,167,38,0.4)" : "1px solid var(--border)" }}>
-        {/* Header */}
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
-          <div style={{
-            width: 32, height: 32, background: "rgba(255,167,38,0.15)",
-            border: "1px solid rgba(255,167,38,0.3)",
-            borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16,
-          }}>⬆</div>
-          <div>
-            <div style={{ fontFamily: "var(--font-display)", fontSize: 15, fontWeight: 700, letterSpacing: 0.8 }}>
-              SALIDA RÁPIDA
+      <Card className={cn("gap-0 py-4 transition-colors", datos && "border-alerta/40")}>
+        <CardContent className="px-4">
+          <div className="mb-4 flex items-center gap-2">
+            <div className="flex size-8 items-center justify-center rounded-lg border border-alerta/30 bg-alerta/15">
+              <ArrowUpFromLine className="size-4 text-alerta" />
             </div>
-            <div style={{ fontSize: 10, color: "var(--text-muted)" }}>Número de ficha + Enter</div>
+
+            <div>
+              <div className="font-display text-[15px] font-bold tracking-[0.8px]">
+                SALIDA RÁPIDA
+              </div>
+              <div className="text-[10px] text-muted-foreground">Número de ficha + Enter</div>
+            </div>
           </div>
-        </div>
 
-        {/* Ficha input */}
-        <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
-          <input
-            ref={inputRef}
-            type="number"
-            placeholder="Ej: 1, 8, 35"
-            value={ficha}
-            onChange={e => { setFicha(e.target.value); setDatos(null); }}
-            onKeyDown={e => {
-
-  if (e.key === "Enter") {
-
-    if (datos) {
-
-      finalizar(false);
-
-    } else {
-
-      buscar();
-
-    }
-
-  }
-
-}}
-            min={1}
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 20,
-              fontWeight: 700,
-              textAlign: "center",
-              letterSpacing: 2,
-              flex: 1,
-              padding: "13px",
-            }}
-          />
-          <button className="btn-ghost" onClick={buscar} disabled={loading} style={{ padding: "13px 16px", fontSize: 18 }}>
-            {loading ? "…" : "🔍"}
-          </button>
-        </div>
-
-        {/* Resultado */}
-        {datos && (
-          <div className="fade-up" style={{
-            background: "var(--bg-elevated)",
-            border: "1px solid var(--border-bright)",
-            borderRadius: "var(--radius-sm)",
-            padding: "14px",
-            marginBottom: 12,
-          }}>
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: "var(--accent-amber)" }}>
-                F-{String(parseInt(datos.ficha?.replace("F-", "") || 0)).padStart(4, "0")}
-              </span>
-              <span className="badge badge-amber">{datos.tipo}</span>
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px 12px", fontSize: 13, color: "var(--text-secondary)" }}>
-              <div>Placa: <span style={{ color: "var(--text-primary)", fontFamily: "var(--font-mono)" }}>{datos.placa}</span></div>
-              <div>Tiempo: <span style={{ color: "var(--accent-amber)" }}>{datos.minutos} min</span></div>
-              <div>
-Modalidad:
-<span
-style={{
-color:"#00e676",
-fontWeight:"700",
-marginLeft:"6px"
-}}
->
-{datos.modalidad}
-</span>
-</div>
-            </div>
-            <div style={{ marginTop: 10, fontSize: 22, fontFamily: "var(--font-display)", fontWeight: 700, color: "var(--accent-green)" }}>
-              Total: {fmt(datos.valor)}
-            </div>
-
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 12 }}>
-              <button className="btn-success" onClick={() => finalizar(true)} style={{ justifyContent: "center", padding: "11px 8px", fontSize: 13 }}>
-                🖨 Con Tiquete
-              </button>
-              <button
-              ref={botonSinTicketRef}
-              onClick={() => finalizar(false)}
-              style={{
-                justifyContent: "center",
-                padding: "11px 8px",
-                fontSize: 13,
-                background: "var(--bg-deep)",
-                border: "1.5px solid var(--border-bright)",
-                color: "var(--text-primary)",
-                borderRadius: "var(--radius-sm)",
-                fontWeight: 600,
-                cursor: "pointer",
+          <div className="mb-3 flex gap-2">
+            <Input
+              ref={campoFicha}
+              type="number"
+              min={1}
+              aria-label="Número de ficha"
+              placeholder="Ej: 1, 8, 35"
+              value={ficha}
+              onChange={(evento) => {
+                setFicha(evento.target.value);
+                busqueda.reset();
               }}
+              onKeyDown={(evento) => {
+                if (evento.key !== "Enter") {
+                  return;
+                }
+
+                if (datos) {
+                  finalizar(false);
+                } else {
+                  buscar();
+                }
+              }}
+              className="h-auto flex-1 py-3.5 text-center font-mono text-xl font-bold tracking-[2px] md:text-xl"
+            />
+
+            <Button
+              variant="outline"
+              aria-label="Buscar ficha"
+              onClick={buscar}
+              disabled={busqueda.isPending}
+              className="h-auto px-4"
             >
-              ✔ Sin Tiquete
-            </button>
+              {busqueda.isPending ? <Loader2 className="motion-safe:animate-spin" /> : <Search />}
+            </Button>
+          </div>
+
+          {datos && (
+            <div className="mb-3 rounded-md border border-borde-vivo bg-superficie-alta p-3.5 motion-safe:animate-in motion-safe:duration-200 motion-safe:fade-in motion-safe:slide-in-from-bottom-2">
+              <div className="mb-2 flex items-center justify-between">
+                <span className="font-mono text-lg font-bold text-alerta">
+                  {fichaCompleta(numeroDeFicha(datos.ficha))}
+                </span>
+
+                <Badge variant="outline" className="border-alerta/30 bg-alerta/15 text-alerta">
+                  {datos.tipo}
+                </Badge>
+              </div>
+
+              <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-[13px] text-muted-foreground">
+                <div>
+                  Placa: <span className="font-mono text-foreground">{datos.placa}</span>
+                </div>
+                <div>
+                  Modalidad: <span className="font-semibold text-exito">{datos.modalidad}</span>
+                </div>
+              </div>
+
+              <div className="mt-2.5 flex items-end justify-between border-t border-border pt-2.5">
+                <div>
+                  <div className="text-[10px] tracking-[0.8px] text-muted-foreground uppercase">
+                    Tiempo
+                  </div>
+                  <div className="font-display text-lg font-bold text-alerta">
+                    {datos.minutos} min
+                  </div>
+                </div>
+
+                <div className="text-right">
+                  <div className="text-[10px] tracking-[0.8px] text-muted-foreground uppercase">
+                    Total
+                  </div>
+                  <div className="font-display text-[22px] leading-tight font-bold text-exito">
+                    {formatearPesos(datos.valor)}
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <Button
+                  className="bg-exito-tenue text-background hover:bg-exito"
+                  onClick={() => finalizar(true)}
+                >
+                  <Printer />
+                  Con Tiquete
+                </Button>
+
+                <Button ref={botonSinTiquete} variant="outline" onClick={() => finalizar(false)}>
+                  <Check />
+                  Sin Tiquete
+                </Button>
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {!datos && (
-          <div style={{ textAlign: "center", fontSize: 11, color: "var(--text-muted)", padding: "8px 0" }}>
-            Escribe el número de ficha y presiona Enter
-          </div>
-        )}
-      </div>
+          {!datos && (
+            <div className="py-2 text-center text-[11px] text-muted-foreground">
+              Escribe el número de ficha y presiona Enter
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
-      {ticketSalida && (
+      {tiquete && (
         <Tiquete
-          ticket={ticketSalida}
+          ticket={tiquete}
           tipo="salida"
-          onClose={() => { setTicketSalida(null); inputRef.current?.focus(); }}
+          onClose={() => {
+            setTiquete(null);
+            campoFicha.current?.focus();
+          }}
         />
       )}
     </>

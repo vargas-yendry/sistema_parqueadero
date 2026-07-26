@@ -1,119 +1,146 @@
-function getConfig() {
-  try {
-    const s = localStorage.getItem("configParqueadero");
-    return s ? JSON.parse(s) : null;
-  } catch { return null; }
+import { Printer } from "lucide-react";
+
+import { obtenerConfig } from "@/features/configuracion/configuracion";
+import { Button } from "@/interfaz/button";
+import { cn } from "@/interfaz/cn";
+import { Dialog, DialogContent, DialogTitle } from "@/interfaz/dialog";
+
+function anchoBarra(codigo) {
+  if (codigo % 3 === 0) return "w-[3px]";
+  if (codigo % 5 === 0) return "w-0.5";
+
+  return "w-px";
 }
 
-const DEFAULT_CONFIG = {
-  nombre: "Parqueadero Y&G",
-  nit: "700539446-2",
-  telefono1: "3148124372",
-  telefono2: "3015836567",
-  direccion: "Calle 17 #23-51",
-  mensaje: "¡Gracias por su visita!",
-};
+/** Barras estables: la misma ficha+placa siempre pinta el mismo código. */
+function calcularBarras(ficha, placa) {
+  const semilla = String(ficha) + placa;
+
+  return Array.from({ length: 50 }, (_, i) => {
+    const codigo = semilla.charCodeAt(i % semilla.length) + i;
+
+    return {
+      id: `barra-${i}`,
+      ancho: anchoBarra(codigo),
+      visible: codigo % 7 !== 0,
+    };
+  });
+}
 
 function Tiquete({ ticket, tipo = "ingreso", onClose }) {
-  const cfg = getConfig() || DEFAULT_CONFIG;
-  const handlePrint = () => {
+  const config = obtenerConfig();
+  const ficha = String(ticket.ficha).padStart(4, "0");
+  const barras = calcularBarras(ticket.ficha, ticket.placa);
 
-  const cerrarDespuesImpresion = () => {
-    onClose?.();
-    window.removeEventListener(
-      "afterprint",
-      cerrarDespuesImpresion
-    );
+  const imprimir = () => {
+    const cerrarDespuesImpresion = () => {
+      onClose?.();
+      window.removeEventListener("afterprint", cerrarDespuesImpresion);
+    };
+
+    window.addEventListener("afterprint", cerrarDespuesImpresion);
+    window.print();
   };
 
-  window.addEventListener(
-    "afterprint",
-    cerrarDespuesImpresion
-  );
-
-  window.print();
-
-};
-
-  // Generate stable barcode bars (deterministic from ficha+placa)
-  const seed = String(ticket.ficha) + ticket.placa;
-  const bars = Array.from({ length: 50 }, (_, i) => {
-    const c = seed.charCodeAt(i % seed.length) + i;
-    return { w: c % 3 === 0 ? 3 : c % 5 === 0 ? 2 : 1, show: c % 7 !== 0 };
-  });
-
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div onClick={e => e.stopPropagation()} style={{ display: "flex", flexDirection: "column", gap: 16, alignItems: "center" }}>
-        <div id="ticket-print" style={{
-          background: "white",
-          color: "#111",
-          width: "100%",
-          maxWidth: "100%",
-          boxSizing: "border-box",
-          padding: "10px",
-          borderRadius: 8,
-          fontFamily: "'Courier New', monospace",
-          fontSize: 12,
-          boxShadow: "0 8px 40px rgba(0,0,0,0.5)",
-        }}>
-          <div style={{ textAlign: "center", borderBottom: "1px dashed #999", paddingBottom: 10, marginBottom: 10 }}>
-            <div style={{ fontWeight: 700, fontSize: 16, letterSpacing: 1 }}>{cfg.nombre}</div>
-            <div>NIT: {cfg.nit}</div>
-            <div>Tel: {cfg.telefono1} / {cfg.telefono2}</div>
-            <div>{cfg.direccion}</div>
+    <Dialog
+      open
+      onOpenChange={(abierto) => {
+        if (!abierto) onClose?.();
+      }}
+    >
+      {/* En impresión el diálogo deja de posicionar: el tiquete se ancla al papel, no al centro de la pantalla. */}
+      <DialogContent
+        aria-describedby={undefined}
+        showCloseButton={false}
+        className="justify-items-center border-0 bg-transparent p-0 shadow-none sm:max-w-xs print:static! print:translate-none!"
+      >
+        <DialogTitle className="sr-only">Tiquete de {tipo}</DialogTitle>
+
+        <div
+          id="tiquete-impresion"
+          className="w-full rounded-lg bg-white p-2.5 font-mono text-xs text-black shadow-flotante"
+        >
+          <div className="mb-2.5 border-b border-dashed border-neutral-400 pb-2.5 text-center">
+            <div className="text-base font-bold tracking-wider">{config.nombre}</div>
+            <div>NIT: {config.nit}</div>
+            <div>
+              Tel: {config.telefono1} / {config.telefono2}
+            </div>
+            <div>{config.direccion}</div>
           </div>
 
-          <div style={{ textAlign: "center", margin: "10px 0", fontSize: 28, fontWeight: 900, letterSpacing: 4 }}>
-            F-{String(ticket.ficha).padStart(4, "0")}
-          </div>
+          <div className="my-2.5 text-center text-3xl font-black tracking-[4px]">F-{ficha}</div>
 
-          <div style={{ borderTop: "1px dashed #999", paddingTop: 10, lineHeight: 1.8 }}>
-            <div><b>Placa:</b> {ticket.placa}</div>
-            <div><b>Tipo:</b> {ticket.tipo}</div>
-            {ticket.cascos > 0 && <div><b>Cascos:</b> {ticket.cascos}</div>}
-            <div><b>Ingreso:</b> {ticket.fecha} {ticket.hora}</div>
-            {tipo === "salida" && (
-              <>
-                <div><b>Salida:</b> {ticket.horaSalida}</div>
-                <div><b>Tiempo:</b> {ticket.tiempo}</div>
-              </>
-            )}
-            <div><b>Tarifa:</b> {ticket.tarifa}</div>
-            <div><b>Modalidad:</b> {ticket.modalidad}</div>
-            {tipo === "salida" && (
-              <div style={{ fontWeight: 700, fontSize: 15, marginTop: 6 }}>
-                TOTAL: {ticket.total}
+          <div className="border-t border-dashed border-neutral-400 pt-2.5 leading-[1.8]">
+            <div>
+              <b>Placa:</b> {ticket.placa}
+            </div>
+            <div>
+              <b>Tipo:</b> {ticket.tipo}
+            </div>
+            {ticket.cascos > 0 && (
+              <div>
+                <b>Cascos:</b> {ticket.cascos}
               </div>
             )}
+            <div>
+              <b>Ingreso:</b> {ticket.fecha} {ticket.hora}
+            </div>
+            {tipo === "salida" && (
+              <>
+                <div>
+                  <b>Salida:</b> {ticket.horaSalida}
+                </div>
+                <div>
+                  <b>Tiempo:</b> {ticket.tiempo}
+                </div>
+              </>
+            )}
+            <div>
+              <b>Tarifa:</b> {ticket.tarifa}
+            </div>
+            <div>
+              <b>Modalidad:</b> {ticket.modalidad}
+            </div>
+            {tipo === "salida" && (
+              <div className="mt-1.5 text-[15px] font-bold">TOTAL: {ticket.total}</div>
+            )}
           </div>
 
-          <div style={{ textAlign: "center", margin: "12px 0 8px", borderTop: "1px dashed #999", paddingTop: 10 }}>
-            <div style={{ display: "flex", justifyContent: "center", gap: 1, height: 35 }}>
-              {bars.map((b, i) => (
-                <div key={i} style={{ width: b.w, height: "100%", background: b.show ? "#111" : "transparent" }} />
+          <div className="mt-3 mb-2 border-t border-dashed border-neutral-400 pt-2.5 text-center">
+            <div className="flex h-[35px] justify-center gap-px">
+              {barras.map((barra) => (
+                <div
+                  key={barra.id}
+                  className={cn(
+                    "h-full",
+                    barra.ancho,
+                    barra.visible ? "bg-black" : "bg-transparent",
+                  )}
+                />
               ))}
             </div>
-            <div style={{ fontSize: 9, letterSpacing: 3, marginTop: 4 }}>
-              {String(ticket.ficha).padStart(4, "0")}-{ticket.placa}
+            <div className="mt-1 text-[9px] tracking-[3px]">
+              {ficha}-{ticket.placa}
             </div>
           </div>
 
-          <div style={{ textAlign: "center", fontSize: 11, marginTop: 6 }}>{cfg.mensaje}</div>
+          <div className="mt-1.5 text-center text-[11px]">{config.mensaje}</div>
         </div>
 
-        <div style={{ display: "flex", gap: 10 }}>
-          <button className="btn-primary" onClick={handlePrint} style={{ padding: "11px 24px", fontSize: 14 }}>
-            🖨 Imprimir
-          </button>
-          <button className="btn-ghost" onClick={onClose} style={{ padding: "11px 20px" }}>
+        <div className="flex justify-center gap-2.5">
+          <Button size="lg" onClick={imprimir}>
+            <Printer />
+            Imprimir
+          </Button>
+          <Button size="lg" variant="outline" onClick={onClose}>
             Cerrar
-          </button>
+          </Button>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
-export { DEFAULT_CONFIG, getConfig };
 export default Tiquete;

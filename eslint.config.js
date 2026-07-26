@@ -23,6 +23,14 @@ export default [
   js.configs.recommended,
   sonarjs.configs.recommended,
 
+  {
+    rules: {
+      // El código está en español y "todo" es una palabra corriente: la regla
+      // marca comentarios normales ("cambia todo lo que hay en pantalla").
+      "sonarjs/todo-tag": "off",
+    },
+  },
+
   // Interfaz: React en el navegador.
   {
     files: ["src/**/*.{js,jsx}"],
@@ -66,6 +74,15 @@ export default [
     },
     rules: {
       "sonarjs/no-duplicate-string": "off",
+    },
+  },
+
+  // Componentes de shadcn: los genera el CLI y exportan variantes junto al componente.
+  // No se editan a mano, así que no se les exige la regla de fast refresh.
+  {
+    files: ["src/interfaz/**"],
+    rules: {
+      "react-refresh/only-export-components": "off",
     },
   },
 

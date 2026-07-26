@@ -34,3 +34,6 @@ pnpm-debug.log*
 coverage/
 .vitest/
 .impeccable/
+
+# Canon horneado (regenerable con /rumbo-sync)
+CLAUDE.md

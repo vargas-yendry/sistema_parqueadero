@@ -1,652 +1,207 @@
-import { useState, useEffect } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Plus, TriangleAlert } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
 
+import { api } from "@/api";
+import FormularioAccesorio from "@/features/accesorios/FormularioAccesorio";
+import HistorialVentas from "@/features/accesorios/HistorialVentas";
+import RegistroVenta from "@/features/accesorios/RegistroVenta";
+import ResumenAccesorios from "@/features/accesorios/ResumenAccesorios";
+import TarjetaAccesorio from "@/features/accesorios/TarjetaAccesorio";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/interfaz/alert-dialog";
+import { Button } from "@/interfaz/button";
+import { Card, CardContent } from "@/interfaz/card";
+import { Skeleton } from "@/interfaz/skeleton";
 
-
-const EMPTY_FORM = {
-  nombre: "",
-  emoji: "📦",
-  precio: "",
-  costo: "",
-  stock: "",
-  minStock: "5"
-};
+const TARJETAS_ESQUELETO = [1, 2, 3];
 
 export default function Accesorios() {
-  const [productos, setProductos] = useState([]);
-  const [modal, setModal] = useState(null);
-  const [form, setForm] = useState(EMPTY_FORM);
-  const [venta, setVenta] = useState(null); // producto a vender
-  const [cantVenta, setCantVenta] = useState(1);
-  const [historialVentas, setHistorialVentas] = useState([]);
-  const cargarProductos = async () => {
+  const [formularioAbierto, setFormularioAbierto] = useState(false);
+  const [enEdicion, setEnEdicion] = useState(null);
+  const [porEliminar, setPorEliminar] = useState(null);
+  const [enVenta, setEnVenta] = useState(null);
+  const clienteConsultas = useQueryClient();
 
-  try {
+  const consultaProductos = useQuery({
+    queryKey: ["accesorios"],
+    queryFn: async () => (await api.get("/accesorios")).data,
+  });
 
-    const res = await fetch(
-      "http://localhost:3333/api/accesorios"
-    );
+  const consultaVentas = useQuery({
+    queryKey: ["ventas-accesorios"],
+    queryFn: async () => (await api.get("/accesorios/ventas/historial")).data,
+  });
 
-    const data = await res.json();
+  const productos = consultaProductos.data ?? [];
+  const ventas = consultaVentas.data ?? [];
+  const stockBajo = productos.filter((producto) => producto.stock <= producto.minStock);
 
-    setProductos(data);
+  const refrescarProductos = () => clienteConsultas.invalidateQueries({ queryKey: ["accesorios"] });
 
-  } catch (error) {
+  const guardado = useMutation({
+    mutationFn: ({ id, datos }) =>
+      id ? api.put(`/accesorios/${id}`, datos) : api.post("/accesorios", datos),
 
-    console.error(error);
+    onSuccess: () => {
+      refrescarProductos();
+      toast.success("Producto guardado");
+      setFormularioAbierto(false);
+    },
 
-  }
+    onError: () => toast.error("No se pudo guardar el producto"),
+  });
 
-};
+  const borrado = useMutation({
+    mutationFn: (id) => api.delete(`/accesorios/${id}`),
 
-useEffect(() => {
+    onSuccess: () => {
+      refrescarProductos();
+      toast.success("Producto eliminado");
+      setPorEliminar(null);
+    },
 
-  cargarProductos();
-  cargarHistorial();
+    onError: () => toast.error("No se pudo eliminar el producto"),
+  });
 
-}, []);
+  const venta = useMutation({
+    mutationFn: ({ id, cantidad }) => api.post(`/accesorios/venta/${id}`, { cantidad }),
 
-  const cargarHistorial = async () => {
+    onSuccess: () => {
+      refrescarProductos();
+      clienteConsultas.invalidateQueries({ queryKey: ["ventas-accesorios"] });
+      toast.success("Venta registrada");
+      setEnVenta(null);
+    },
 
-  try {
+    onError: () => toast.error("Error registrando venta"),
+  });
 
-    const res = await fetch(
-      "http://localhost:3333/api/accesorios/ventas/historial"
-    );
-
-    const data = await res.json();
-
-    setHistorialVentas(data);
-
-  } catch(error){
-
-    console.error(error);
-
-  }
-
-};
-
-  const stockBajo = productos.filter(p => p.stock <= p.minStock);
-
-  const mesActual =
-  new Date().getMonth();
-
-const anioActual =
-  new Date().getFullYear();
-
-const gananciaMes =
-  historialVentas
-    .filter(v => {
-
-      const fecha =
-        new Date(v.fecha);
-
-      return (
-        fecha.getMonth() === mesActual &&
-        fecha.getFullYear() === anioActual
-      );
-
-    })
-    .reduce(
-      (acc,v)=>acc+(v.ganancia || 0),
-      0
-    );
-
-  const abrir = (p = null) => {
-    if (p) {
-      setForm({
-  nombre: p.nombre,
-  emoji: p.emoji,
-  precio: p.precio,
-  costo: p.costo || 0,
-  stock: p.stock,
-  minStock: p.minStock
-});
-      setModal(p.id);
-    } else {
-      setForm(EMPTY_FORM);
-      setModal("new");
-    }
+  const abrirFormulario = (producto) => {
+    setEnEdicion(producto);
+    setFormularioAbierto(true);
   };
 
-  const guardar = async () => {
-
-  if (
-    !form.nombre ||
-    !form.precio ||
-    !form.stock
-  ) return;
-
-  try {
-
-    if (modal === "new") {
-
-      await fetch(
-        "http://localhost:3333/api/accesorios",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type":"application/json"
-          },
-          body: JSON.stringify({
-  nombre: form.nombre,
-  emoji: form.emoji,
-  precio: Number(form.precio),
-  costo: Number(form.costo),
-  stock: Number(form.stock),
-  minStock: Number(form.minStock)
-})
-        }
-      );
-
-    } else {
-
-      await fetch(
-        `http://localhost:3333/api/accesorios/${modal}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type":"application/json"
-          },
-          body: JSON.stringify({
-            nombre: form.nombre,
-            emoji: form.emoji,
-            precio: Number(form.precio),
-            costo: Number(form.costo),
-            stock: Number(form.stock),
-            minStock: Number(form.minStock)
-          })
-        }
-      );
-
-    }
-
-    await cargarProductos();
-
-    setModal(null);
-
-  } catch(error){
-
-    console.error(error);
-
-  }
-
-};
-
- const eliminarProducto = async (id) => {
-
-  const confirmar = window.confirm(
-    "¿Eliminar este producto?"
-  );
-
-  if(!confirmar) return;
-
-  try {
-
-    await fetch(
-      `http://localhost:3333/api/accesorios/${id}`,
-      {
-        method:"DELETE"
-      }
-    );
-
-    await cargarProductos();
-
-  } catch(error){
-
-    console.error(error);
-
-  }
-
-};
-
-const registrarVenta = async () => {
-
-  if (!venta) return;
-
-  try {
-
-    await fetch(
-
-      `http://localhost:3333/api/accesorios/venta/${venta.id}`,
-
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          cantidad: Number(cantVenta)
-        })
-      }
-
-    );
-
-    setVenta(null);
-
-    await cargarProductos();
-    await cargarHistorial();
-
-  } catch(error){
-
-    console.error(error);
-
-    alert("Error registrando venta");
-
-  }
-
-};
-
-
-  const fmt = (n) => new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 }).format(n);
-
   return (
-    <div style={{ padding: 24 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 }}>
+    <div className="p-6">
+      <div className="mb-5 flex items-start justify-between">
         <div>
-          <h1 style={{ fontFamily: "var(--font-display)", fontSize: 24, fontWeight: 700, letterSpacing: 1 }}>
+          <h1 className="font-display text-2xl font-bold tracking-[1px]">
             ACCESORIOS / INVENTARIO
           </h1>
-          <p style={{ color: "var(--text-muted)", fontSize: 13, marginTop: 2 }}>
+
+          <p className="mt-0.5 text-[13px] text-muted-foreground">
             {productos.length} productos · {stockBajo.length} con stock bajo
           </p>
         </div>
-        <button className="btn-primary" onClick={() => abrir(null)}>+ Nuevo Producto</button>
+
+        <Button onClick={() => abrirFormulario(null)}>
+          <Plus />
+          Nuevo Producto
+        </Button>
       </div>
 
-      
+      <ResumenAccesorios productos={productos} ventas={ventas} conStockBajo={stockBajo.length} />
 
-      <div
-  style={{
-    display:"grid",
-    gridTemplateColumns:"repeat(auto-fit,minmax(220px,1fr))",
-    gap:"14px",
-    marginBottom:"20px"
-  }}
->
-
-  <div className="card">
-    <div style={{fontSize:12,color:"var(--text-muted)"}}>
-      📦 PRODUCTOS
-    </div>
-
-    <div
-      style={{
-        fontSize:28,
-        fontWeight:700,
-        marginTop:8
-      }}
-    >
-      {productos.length}
-    </div>
-  </div>
-
-  <div className="card">
-
-  <div
-    style={{
-      fontSize:12,
-      color:"var(--text-muted)"
-    }}
-  >
-    💰 GANANCIA DEL MES
-  </div>
-
-  <div
-    style={{
-      fontSize:28,
-      fontWeight:700,
-      color:"var(--accent-green)",
-      marginTop:8
-    }}
-  >
-    {fmt(gananciaMes)}
-  </div>
-
-</div>
-
-  <div className="card">
-    <div style={{fontSize:12,color:"var(--text-muted)"}}>
-      🛒 VENTAS
-    </div>
-
-    <div
-      style={{
-        fontSize:28,
-        fontWeight:700,
-        color:"#bb86fc",
-        marginTop:8
-      }}
-    >
-      {
-        productos.reduce(
-          (acc,p)=>acc+(p.ventas || 0),
-          0
-        )
-      }
-    </div>
-  </div>
-
-  <div className="card">
-    <div style={{fontSize:12,color:"var(--text-muted)"}}>
-      ⚠ STOCK BAJO
-    </div>
-
-    <div
-      style={{
-        fontSize:28,
-        fontWeight:700,
-        color:"var(--accent-red)",
-        marginTop:8
-      }}
-    >
-      {stockBajo.length}
-    </div>
-  </div>
-
-</div>
-
-      {/* Alertas stock bajo */}
       {stockBajo.length > 0 && (
-        <div className="card" style={{ marginBottom: 16, border: "1px solid rgba(239,83,80,0.3)", background: "rgba(239,83,80,0.05)" }}>
-          <div style={{ fontSize: 12, fontWeight: 600, color: "var(--accent-red)", marginBottom: 6 }}>⚠ PRODUCTOS POR AGOTARSE</div>
-          {stockBajo.map(p => (
-            <div key={p.id} style={{ fontSize: 12, color: "var(--text-secondary)" }}>
-              • {p.emoji} {p.nombre}: <b style={{ color: "var(--accent-red)" }}>{p.stock}</b> disponibles
+        <Card className="mb-4 gap-0 border-alerta/30 bg-alerta/5 py-4">
+          <CardContent className="px-4">
+            <div className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-alerta">
+              <TriangleAlert className="size-3.5" />
+              PRODUCTOS POR AGOTARSE
             </div>
-          ))}
-        </div>
+
+            {stockBajo.map((producto) => (
+              <div key={producto.id} className="py-[3px] text-xs text-muted-foreground">
+                • {producto.emoji} {producto.nombre}:{" "}
+                <b className="text-alerta">{producto.stock}</b> disponibles
+              </div>
+            ))}
+          </CardContent>
+        </Card>
       )}
 
-      {/* CONTENEDOR GENERAL */}
-<div
-  style={{
-    display: "grid",
-    gridTemplateColumns: "1fr 420px",
-    gap: "20px",
-    alignItems: "start"
-  }}
->
+      <div className="grid grid-cols-[1fr_420px] items-start gap-5">
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-3.5">
+          {consultaProductos.isPending &&
+            TARJETAS_ESQUELETO.map((tarjeta) => <Skeleton key={tarjeta} className="h-64" />)}
 
-  {/* COLUMNA IZQUIERDA */}
-  <div>
+          {!consultaProductos.isPending &&
+            productos.map((producto) => (
+              <TarjetaAccesorio
+                key={producto.id}
+                producto={producto}
+                onEditar={abrirFormulario}
+                onEliminar={setPorEliminar}
+                onVender={setEnVenta}
+              />
+            ))}
+        </div>
 
-    {/* Products grid */}
-    <div
-      style={{
-        display: "grid",
-        gridTemplateColumns:
-          "repeat(auto-fill, minmax(220px, 1fr))",
-        gap: 14
-      }}
-    >
-        {productos.map(p => (
-          <div key={p.id} className="card" style={{ border: p.stock <= p.minStock ? "1px solid rgba(239,83,80,0.3)" : "1px solid var(--border)" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-              <span style={{ fontSize: 28 }}>{p.emoji}</span>
-              <div style={{ display: "flex", gap: 6 }}>
+        <HistorialVentas ventas={ventas} cargando={consultaVentas.isPending} />
+      </div>
 
-                
+      {formularioAbierto && (
+        <FormularioAccesorio
+          producto={enEdicion}
+          guardando={guardado.isPending}
+          onGuardar={(datos) => guardado.mutate({ id: enEdicion?.id, datos })}
+          onCerrar={() => setFormularioAbierto(false)}
+        />
+      )}
 
-  <button
-    className="btn-ghost"
-    onClick={() => abrir(p)}
-    style={{
-      padding:"4px 8px",
-      fontSize:12
-    }}
-  >
-    ✏
-  </button>
+      {enVenta && (
+        <RegistroVenta
+          producto={enVenta}
+          registrando={venta.isPending}
+          onRegistrar={(cantidad) => venta.mutate({ id: enVenta.id, cantidad })}
+          onCerrar={() => setEnVenta(null)}
+        />
+      )}
 
-  <button
-    className="btn-ghost"
-    onClick={() => eliminarProducto(p.id)}
-    style={{
-      padding:"4px 8px",
-      fontSize:12,
-      color:"#ff5c5c"
-    }}
-  >
-    🗑
-  </button>
+      <AlertDialog
+        open={porEliminar !== null}
+        onOpenChange={(abierto) => {
+          if (!abierto) {
+            setPorEliminar(null);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar este producto?</AlertDialogTitle>
 
-</div>
+            <AlertDialogDescription>
+              Se borra {porEliminar?.nombre} del inventario. No se puede deshacer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
 
-      
-              
-            </div>
-            <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 4 }}>{p.nombre}</div>
-            <div style={{ color: "var(--accent-green)", fontFamily: "var(--font-display)", fontSize: 18, fontWeight: 700, marginBottom: 8 }}>
-              {fmt(p.precio)}
-            </div>
-            
-            <div
-  style={{
-    fontSize:12,
-    color:"#9ca3af",
-    marginBottom:4
-  }}
->
-Costo: {fmt(p.costo || 0)}
-</div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
 
-<div
-  style={{
-    fontSize:12,
-    color:"#22c55e",
-    marginBottom:10,
-    fontWeight:600
-  }}
->
-Ganancia: {fmt((p.precio || 0) - (p.costo || 0))}
-            </div>
-            
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
-              <div style={{ fontSize: 12, color: "var(--text-muted)" }}>
-                Stock: <span style={{ color: p.stock <= p.minStock ? "var(--accent-red)" : "var(--text-primary)", fontWeight: 600 }}>{p.stock}</span>
-              </div>
-              <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Vendidas: {p.ventas}</div>
-            </div>
-            <button
-              className="btn-success"
-              onClick={() => { setVenta(p); setCantVenta(1); }}
-              style={{ width: "100%", justifyContent: "center", padding: "9px", fontSize: 13 }}
-              disabled={p.stock === 0}
-            >
-              + Registrar Venta
-            </button>
-          </div>
-        ))}
-</div>
-
-</div>
-
-        {/* COLUMNA DERECHA */}
-
-<div className="card">
-
-  <h2
-    style={{
-      fontFamily:"var(--font-display)",
-      marginBottom:"16px"
-    }}
-  >
-    
-  </h2>
-
-  <div
-    style={{
-      maxHeight:"500px",
-      overflowY:"auto"
-    }}
-  ></div>
-
-      
-
-  <h2
-    style={{
-      fontFamily:"var(--font-display)",
-      marginBottom:"16px"
-    }}
-  >
-    🧾 Historial de Ventas
-  </h2>
-
-  <div
-    style={{
-      maxHeight:"350px",
-      overflowY:"auto"
-    }}
-  >
-
-    <table
-      style={{
-        width:"100%",
-        borderCollapse:"collapse"
-      }}
-    >
-
-      <thead>
-
-        <tr>
-
-          <th style={{textAlign:"left",padding:"10px"}}>
-            Fecha
-          </th>
-
-          <th style={{textAlign:"left",padding:"10px"}}>
-            Producto
-          </th>
-
-          <th style={{textAlign:"left",padding:"10px"}}>
-            Cantidad
-          </th>
-
-          <th style={{textAlign:"left",padding:"10px"}}>
-            Precio
-          </th>
-
-          <th style={{textAlign:"left",padding:"10px"}}>
-            Total
-          </th>
-
-        </tr>
-
-      </thead>
-
-      <tbody>
-
-        {historialVentas.map(v => (
-
-          <tr key={v.id}>
-
-            <td style={{padding:"10px"}}>
-              {
-                new Date(v.fecha)
-                .toLocaleDateString()
-              }
-            </td>
-
-            <td style={{padding:"10px"}}>
-              {v.producto}
-            </td>
-
-            <td style={{padding:"10px"}}>
-              {v.cantidad}
-            </td>
-
-            <td style={{padding:"10px"}}>
-              {fmt(v.precio)}
-            </td>
-
-            <td
-              style={{
-                padding:"10px",
-                color:"var(--accent-green)",
-                fontWeight:600
+            <AlertDialogAction
+              variant="destructive"
+              disabled={borrado.isPending}
+              onClick={(evento) => {
+                // Sin esto Radix cierra el diálogo antes de que la mutación termine.
+                evento.preventDefault();
+                borrado.mutate(porEliminar.id);
               }}
             >
-              {fmt(v.total)}
-            </td>
-
-          </tr>
-
-        ))}
-
-      </tbody>
-
-    </table>
-
-  </div>
-
-        </div>
-        
-        </div>
-
-      
-
-      {/* Producto modal */}
-      {modal !== null && (
-        <div className="modal-overlay" onClick={() => setModal(null)}>
-          <div className="modal-box fade-up" onClick={e => e.stopPropagation()}>
-            <h2 style={{ fontFamily: "var(--font-display)", fontSize: 18, fontWeight: 700, marginBottom: 20 }}>
-              {modal === "new" ? "Nuevo Producto" : "Editar Producto"}
-            </h2>
-            {[
-                ["Nombre", "nombre", "text", "Nombre del producto"],
-                ["Emoji", "emoji", "text", "📦"],
-                ["Precio de venta", "precio", "number", "0"],
-                ["Costo de compra", "costo", "number", "0"],
-                ["Cantidad disponible", "stock", "number", "0"],
-                ["Avisar cuando queden", "minStock", "number", "5"],
-              ].map(([label, key, type, ph]) => (
-              <div key={key} style={{ marginBottom: 12 }}>
-                <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 4, fontWeight: 600, letterSpacing: 0.5, textTransform: "uppercase" }}>{label}</div>
-                <input type={type} placeholder={ph} value={form[key]} onChange={e => setForm({ ...form, [key]: e.target.value })} />
-              </div>
-              
-            ))}
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 8 }}>
-              <button className="btn-ghost" onClick={() => setModal(null)}>Cancelar</button>
-              <button className="btn-primary" onClick={guardar}>Guardar</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Venta modal */}
-      {venta && (
-        <div className="modal-overlay" onClick={() => setVenta(null)}>
-          <div className="modal-box fade-up" onClick={e => e.stopPropagation()} style={{ width: 360 }}>
-            <h2 style={{ fontFamily: "var(--font-display)", fontSize: 18, fontWeight: 700, marginBottom: 4 }}>
-              Registrar Venta
-            </h2>
-            <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 20 }}>
-              {venta.emoji} {venta.nombre} — Disponibles: {venta.stock}
-            </div>
-            <div style={{ marginBottom: 16 }}>
-              <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 6, fontWeight: 600, letterSpacing: 0.5 }}>CANTIDAD</div>
-              <input
-                type="number"
-                value={cantVenta}
-                onChange={e => setCantVenta(e.target.value)}
-                min={1}
-                max={venta.stock}
-                autoFocus
-                onKeyDown={e => e.key === "Enter" && registrarVenta()}
-                style={{ fontSize: 20, textAlign: "center", fontFamily: "var(--font-mono)", fontWeight: 700 }}
-              />
-            </div>
-            <div style={{ fontSize: 16, fontWeight: 600, color: "var(--accent-green)", marginBottom: 20 }}>
-              Total: {new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 }).format(venta.precio * (cantVenta || 0))}
-            </div>
-            <div style={{ display: "flex", gap: 10 }}>
-              <button className="btn-ghost" onClick={() => setVenta(null)} style={{ flex: 1, justifyContent: "center" }}>Cancelar</button>
-              <button className="btn-success" onClick={registrarVenta} style={{ flex: 1, justifyContent: "center" }}>✔ Confirmar</button>
-            </div>
-          </div>
-        </div>
-      )}
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
