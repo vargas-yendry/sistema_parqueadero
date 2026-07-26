@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
 
 import Reportes from "@/features/reportes/Reportes";
-import { formatearPesos } from "@/formato";
+import { fechaParaApi, formatearPesos } from "@/formato";
 
 const { obtener, publicar, eliminar, avisoExito, avisoError } = vi.hoisted(() => ({
   obtener: vi.fn(),
@@ -101,7 +101,7 @@ it("registra un gasto nuevo con el valor en número y la fecha de hoy", async ()
     expect(publicar).toHaveBeenCalledWith("/gastos", {
       concepto: "Aseo",
       valor: 5000,
-      fecha: new Date().toISOString().split("T")[0],
+      fecha: fechaParaApi(),
     });
   });
 

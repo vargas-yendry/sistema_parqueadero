@@ -2,6 +2,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
+import { fechaMasDias } from "@/formato";
 import { Button } from "@/interfaz/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/interfaz/dialog";
 import { Input } from "@/interfaz/input";
@@ -63,10 +64,9 @@ export default function FormularioMensualidad({ mensualidad, guardando, onGuarda
       return;
     }
 
-    const vence = new Date(inicio);
-    vence.setDate(vence.getDate() + DIAS_DE_MENSUALIDAD);
-
-    setValue("fechaVencimiento", vence.toISOString().split("T")[0], { shouldValidate: true });
+    setValue("fechaVencimiento", fechaMasDias(DIAS_DE_MENSUALIDAD, inicio), {
+      shouldValidate: true,
+    });
   };
 
   return (

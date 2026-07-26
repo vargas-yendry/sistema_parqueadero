@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
 
 import Mensualidades from "@/features/mensualidades/Mensualidades";
+import { fechaMasDias } from "@/formato";
 
 const { obtener, publicar, actualizar, eliminar, avisoExito, avisoError } = vi.hoisted(() => ({
   obtener: vi.fn(),
@@ -20,9 +21,12 @@ vi.mock("@/api", () => ({
 
 vi.mock("sonner", () => ({ toast: { success: avisoExito, error: avisoError } }));
 
-/** Fecha "AAAA-MM-DD" a tantos días de hoy: así el estado no depende del día en que se corra. */
+/**
+ * Fecha "AAAA-MM-DD" a tantos días de hoy, en hora local: así el estado no
+ * depende ni del día ni de la zona horaria en que se corra la prueba.
+ */
 function enDias(dias) {
-  return new Date(Date.now() + dias * 86_400_000).toISOString().split("T")[0];
+  return fechaMasDias(dias);
 }
 
 const ACTIVA = {

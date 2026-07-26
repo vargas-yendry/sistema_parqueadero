@@ -7,6 +7,7 @@ import { api } from "@/api";
 import { obtenerEstado } from "@/features/mensualidades/estadoMensualidad";
 import FormularioMensualidad from "@/features/mensualidades/FormularioMensualidad";
 import TablaMensualidades from "@/features/mensualidades/TablaMensualidades";
+import { fechaMasDias, fechaParaApi } from "@/formato";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -54,20 +55,15 @@ export default function Mensualidades() {
   });
 
   const renovacion = useMutation({
-    mutationFn: (mensualidad) => {
-      const inicio = new Date();
-      const vence = new Date();
-      vence.setDate(vence.getDate() + DIAS_DE_MENSUALIDAD);
-
-      return api.put(`/mensualidades/${mensualidad.id}`, {
+    mutationFn: (mensualidad) =>
+      api.put(`/mensualidades/${mensualidad.id}`, {
         cliente: mensualidad.cliente,
         placa: mensualidad.placa,
         telefono: mensualidad.telefono,
-        fechaInicio: inicio.toISOString().split("T")[0],
-        fechaVencimiento: vence.toISOString().split("T")[0],
+        fechaInicio: fechaParaApi(),
+        fechaVencimiento: fechaMasDias(DIAS_DE_MENSUALIDAD),
         valor: mensualidad.valor,
-      });
-    },
+      }),
 
     onSuccess: () => {
       refrescar();

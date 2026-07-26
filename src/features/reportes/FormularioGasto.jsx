@@ -1,18 +1,15 @@
 import { useState } from "react";
 
+import { fechaParaApi } from "@/formato";
+
 import { Button } from "@/interfaz/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/interfaz/dialog";
 import { Input } from "@/interfaz/input";
 
-/** El gasto se anota en el día en que se abre el formulario, salvo que lo cambien. */
-function hoy() {
-  return new Date().toISOString().split("T")[0];
-}
-
 export default function FormularioGasto({ guardando, onGuardar, onCerrar }) {
   const [concepto, setConcepto] = useState("");
   const [valor, setValor] = useState("");
-  const [fecha, setFecha] = useState(hoy);
+  const [fecha, setFecha] = useState(fechaParaApi);
 
   const guardar = () => {
     if (!concepto || !valor) {

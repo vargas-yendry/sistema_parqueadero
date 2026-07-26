@@ -3,11 +3,14 @@ import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
 
 import TablaMensualidades from "@/features/mensualidades/TablaMensualidades";
-import { formatearPesos } from "@/formato";
+import { fechaMasDias, formatearPesos } from "@/formato";
 
-/** Fecha "AAAA-MM-DD" a tantos días de hoy: así el estado no depende del día en que se corra. */
+/**
+ * Fecha "AAAA-MM-DD" a tantos días de hoy, en hora local: así el estado no
+ * depende ni del día ni de la zona horaria en que se corra la prueba.
+ */
 function enDias(dias) {
-  return new Date(Date.now() + dias * 86_400_000).toISOString().split("T")[0];
+  return fechaMasDias(dias);
 }
 
 /** El formato de moneda trae un espacio duro que Testing Library normaliza al buscar texto. */
