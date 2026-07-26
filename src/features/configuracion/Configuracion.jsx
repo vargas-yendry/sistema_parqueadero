@@ -20,6 +20,7 @@ import {
 } from "@/interfaz/dialog";
 import { Input } from "@/interfaz/input";
 import { Label } from "@/interfaz/label";
+import { Textarea } from "@/interfaz/textarea";
 
 /** Dirección y horario son textos largos: ocupan la fila completa. */
 const CAMPOS = [
@@ -107,12 +108,12 @@ export default function Configuracion({ onClose }) {
             ))}
           </div>
 
-          <Campo etiqueta="Mensaje del Ticket" campo="mensaje" error={errors.mensaje?.message}>
-            <textarea
+          <Campo etiqueta="Mensaje del Tiquete" campo="mensaje" error={errors.mensaje?.message}>
+            <Textarea
               id="mensaje"
-              placeholder="Mensaje para el cliente en el ticket"
+              placeholder="Mensaje para el cliente en el tiquete"
               aria-invalid={Boolean(errors.mensaje)}
-              className="min-h-[70px] w-full resize-y rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs transition-[color,box-shadow] outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20"
+              className="min-h-[70px] resize-y"
               {...register("mensaje")}
             />
           </Campo>

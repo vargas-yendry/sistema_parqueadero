@@ -11,9 +11,9 @@ vi.mock("@/api", () => ({ api: { get: obtener } }));
 
 // Los hijos traen su propia red y su propio foco: aquí solo interesa el cableado.
 vi.mock("@/features/tablero/GrillaParqueo", () => ({
-  default: ({ vehiculos, loading, onRefresh }) => (
-    <button type="button" onClick={onRefresh}>
-      grilla:{loading ? "cargando" : vehiculos.length}
+  default: ({ vehiculos, cargando, onRefrescar }) => (
+    <button type="button" onClick={onRefrescar}>
+      grilla:{cargando ? "cargando" : vehiculos.length}
     </button>
   ),
 }));

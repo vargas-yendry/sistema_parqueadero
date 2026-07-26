@@ -25,7 +25,7 @@ const VEHICULOS = [
 
 function pintar(props = {}) {
   return render(
-    <GrillaParqueo vehiculos={VEHICULOS} loading={false} onRefresh={() => {}} {...props} />,
+    <GrillaParqueo vehiculos={VEHICULOS} cargando={false} onRefrescar={() => {}} {...props} />,
   );
 }
 
@@ -46,7 +46,7 @@ it("pinta una casilla por vehículo y completa la grilla con casillas libres", (
 });
 
 it("muestra esqueletos mientras cargan los vehículos", () => {
-  pintar({ vehiculos: [], loading: true });
+  pintar({ vehiculos: [], cargando: true });
 
   expect(document.querySelectorAll('[data-slot="skeleton"]')).toHaveLength(13);
   expect(screen.queryByText("Libre")).not.toBeInTheDocument();
@@ -77,7 +77,7 @@ it("pide refrescar al pulsar Actualizar", async () => {
   const usuario = userEvent.setup();
   const refrescar = vi.fn();
 
-  pintar({ onRefresh: refrescar });
+  pintar({ onRefrescar: refrescar });
   await usuario.click(screen.getByRole("button", { name: "Actualizar" }));
 
   expect(refrescar).toHaveBeenCalledOnce();

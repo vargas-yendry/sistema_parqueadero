@@ -37,7 +37,7 @@ it("guarda las tarifas como número, avisa y cierra", async () => {
   await usuario.clear(tarifaMoto);
   await usuario.type(tarifaMoto, "1500");
 
-  await usuario.type(screen.getByLabelText("Mensaje del Ticket"), " Vuelva pronto");
+  await usuario.type(screen.getByLabelText("Mensaje del Tiquete"), " Vuelva pronto");
   await usuario.click(screen.getByRole("button", { name: "Guardar" }));
 
   await waitFor(() => expect(alCerrar).toHaveBeenCalled());

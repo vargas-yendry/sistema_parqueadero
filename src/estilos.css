@@ -2,6 +2,14 @@
 @import "tw-animate-css";
 
 /*
+ * Los componentes de shadcn traen variantes `dark:`. Sin esta declaración
+ * Tailwind las resuelve con `prefers-color-scheme`, o sea que la app cambiaría
+ * de aspecto según el tema de Windows. Aquí `dark:` depende de la clase `dark`
+ * del <html>, que está siempre puesta: un solo tema, siempre oscuro.
+ */
+@custom-variant dark (&:is(.dark *));
+
+/*
  * Paleta del parqueadero: azul profundo de noche, siempre en oscuro.
  * La app corre a pantalla completa en el equipo del local, no hay tema claro.
  *

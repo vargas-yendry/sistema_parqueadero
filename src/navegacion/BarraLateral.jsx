@@ -14,7 +14,7 @@ import { Button } from "@/interfaz/button";
 import { cn } from "@/interfaz/cn";
 
 const MENU = [
-  { id: "dashboard", etiqueta: "Tablero", Icono: LayoutDashboard },
+  { id: "tablero", etiqueta: "Tablero", Icono: LayoutDashboard },
   { id: "mensualidades", etiqueta: "Mensualidades", Icono: CalendarDays },
   { id: "accesorios", etiqueta: "Accesorios", Icono: ShoppingCart },
   { id: "reportes", etiqueta: "Reportes", Icono: ChartColumn },

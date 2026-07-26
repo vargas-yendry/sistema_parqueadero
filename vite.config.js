@@ -36,6 +36,13 @@ export default defineConfig({
       reporter: ["text", "html"],
       include: ["src/**/*.{js,jsx}"],
       exclude: ["src/interfaz/**", "src/**/*.test.{js,jsx}", "src/main.jsx"],
+      // Piso que no baja: se sube a medida que se agregan pruebas, nunca al revés.
+      thresholds: {
+        statements: 45,
+        branches: 45,
+        functions: 45,
+        lines: 45,
+      },
     },
   },
 });

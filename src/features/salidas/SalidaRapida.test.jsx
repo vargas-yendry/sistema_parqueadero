@@ -20,7 +20,7 @@ vi.mock("sonner", () => ({ toast: { success: avisoExito, error: avisoError } }))
 
 // El tiquete ya tiene sus propias pruebas: aquí solo interesa que aparezca.
 vi.mock("@/features/tiquetes/Tiquete", () => ({
-  default: ({ ticket }) => <div>tiquete:{ticket.ficha}</div>,
+  default: ({ tiquete }) => <div>tiquete:{tiquete.ficha}</div>,
 }));
 
 const TARIFAS = {
@@ -49,18 +49,18 @@ const VEHICULO = {
   horaIngreso: "2026-07-26T14:00:00.000Z",
 };
 
-function pintar(onSuccess = vi.fn()) {
+function pintar(onRefrescar = vi.fn()) {
   const cliente = new QueryClient({ defaultOptions: { queries: { retry: false } } });
 
   render(
     <QueryClientProvider client={cliente}>
-      <SalidaRapida onSuccess={onSuccess} />
+      <SalidaRapida onRefrescar={onRefrescar} />
     </QueryClientProvider>,
   );
 
   return {
     usuario: userEvent.setup(),
-    onSuccess,
+    onRefrescar,
     campo: screen.getByLabelText("Número de ficha"),
   };
 }
@@ -101,7 +101,7 @@ it("busca la ficha con Enter y muestra el cobro", async () => {
 });
 
 it("finaliza sin tiquete, limpia la ficha y avisa al tablero", async () => {
-  const { usuario, onSuccess, campo } = pintar();
+  const { usuario, onRefrescar, campo } = pintar();
 
   await usuario.type(campo, "8");
   await usuario.keyboard("{Enter}");
@@ -113,7 +113,7 @@ it("finaliza sin tiquete, limpia la ficha y avisa al tablero", async () => {
     expect(publicar).toHaveBeenCalledWith("/salidas/finalizar", { id: 7, ...TARIFAS });
   });
 
-  expect(onSuccess).toHaveBeenCalledTimes(1);
+  expect(onRefrescar).toHaveBeenCalledTimes(1);
   expect(avisoExito).toHaveBeenCalledWith("Salida registrada");
   expect(campo).toHaveValue(null);
   expect(campo).toHaveFocus();

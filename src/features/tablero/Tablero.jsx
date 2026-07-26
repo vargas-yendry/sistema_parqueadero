@@ -115,13 +115,13 @@ export default function Tablero() {
       <div className="grid grid-cols-[1fr_340px] items-start gap-5">
         <GrillaParqueo
           vehiculos={consultaVehiculos.data ?? []}
-          loading={consultaVehiculos.isPending}
-          onRefresh={refrescar}
+          cargando={consultaVehiculos.isPending}
+          onRefrescar={refrescar}
         />
 
         <div className="flex flex-col gap-4">
-          <IngresoRapido onSuccess={refrescar} />
-          <SalidaRapida onSuccess={refrescar} />
+          <IngresoRapido onRefrescar={refrescar} />
+          <SalidaRapida onRefrescar={refrescar} />
         </div>
       </div>
     </div>

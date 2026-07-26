@@ -66,7 +66,7 @@ function tiqueteDeSalida(vehiculo) {
   };
 }
 
-export default function SalidaRapida({ onSuccess }) {
+export default function SalidaRapida({ onRefrescar }) {
   const [ficha, setFicha] = useState("");
   const [tiquete, setTiquete] = useState(null);
 
@@ -115,7 +115,7 @@ export default function SalidaRapida({ onSuccess }) {
       toast.success("Salida registrada");
       setFicha("");
       busqueda.reset();
-      onSuccess?.();
+      onRefrescar?.();
 
       if (!conTiquete) {
         campoFicha.current?.focus();
@@ -261,7 +261,7 @@ export default function SalidaRapida({ onSuccess }) {
 
       {tiquete && (
         <Tiquete
-          ticket={tiquete}
+          tiquete={tiquete}
           tipo="salida"
           onClose={() => {
             setTiquete(null);

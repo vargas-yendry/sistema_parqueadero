@@ -28,7 +28,7 @@ const VISTAS = {
 };
 
 function App() {
-  const [vista, setVista] = useState("dashboard");
+  const [vista, setVista] = useState("tablero");
   const [configAbierta, setConfigAbierta] = useState(false);
   const [confirmandoNuevoDia, setConfirmandoNuevoDia] = useState(false);
   const clienteConsultas = useQueryClient();
@@ -55,7 +55,7 @@ function App() {
       await clienteConsultas.invalidateQueries();
 
       toast.success("Nuevo día iniciado correctamente");
-      setVista("dashboard");
+      setVista("tablero");
     } catch {
       toast.error("No se pudo iniciar el nuevo día");
     }

@@ -27,10 +27,10 @@ function calcularBarras(ficha, placa) {
   });
 }
 
-function Tiquete({ ticket, tipo = "ingreso", onClose }) {
+function Tiquete({ tiquete, tipo = "ingreso", onClose }) {
   const config = obtenerConfig();
-  const ficha = String(ticket.ficha).padStart(4, "0");
-  const barras = calcularBarras(ticket.ficha, ticket.placa);
+  const ficha = String(tiquete.ficha).padStart(4, "0");
+  const barras = calcularBarras(tiquete.ficha, tiquete.placa);
 
   const imprimir = () => {
     const cerrarDespuesImpresion = () => {
@@ -74,37 +74,37 @@ function Tiquete({ ticket, tipo = "ingreso", onClose }) {
 
           <div className="border-t border-dashed border-neutral-400 pt-2.5 leading-[1.8]">
             <div>
-              <b>Placa:</b> {ticket.placa}
+              <b>Placa:</b> {tiquete.placa}
             </div>
             <div>
-              <b>Tipo:</b> {ticket.tipo}
+              <b>Tipo:</b> {tiquete.tipo}
             </div>
-            {ticket.cascos > 0 && (
+            {tiquete.cascos > 0 && (
               <div>
-                <b>Cascos:</b> {ticket.cascos}
+                <b>Cascos:</b> {tiquete.cascos}
               </div>
             )}
             <div>
-              <b>Ingreso:</b> {ticket.fecha} {ticket.hora}
+              <b>Ingreso:</b> {tiquete.fecha} {tiquete.hora}
             </div>
             {tipo === "salida" && (
               <>
                 <div>
-                  <b>Salida:</b> {ticket.horaSalida}
+                  <b>Salida:</b> {tiquete.horaSalida}
                 </div>
                 <div>
-                  <b>Tiempo:</b> {ticket.tiempo}
+                  <b>Tiempo:</b> {tiquete.tiempo}
                 </div>
               </>
             )}
             <div>
-              <b>Tarifa:</b> {ticket.tarifa}
+              <b>Tarifa:</b> {tiquete.tarifa}
             </div>
             <div>
-              <b>Modalidad:</b> {ticket.modalidad}
+              <b>Modalidad:</b> {tiquete.modalidad}
             </div>
             {tipo === "salida" && (
-              <div className="mt-1.5 text-[15px] font-bold">TOTAL: {ticket.total}</div>
+              <div className="mt-1.5 text-[15px] font-bold">TOTAL: {tiquete.total}</div>
             )}
           </div>
 
@@ -122,7 +122,7 @@ function Tiquete({ ticket, tipo = "ingreso", onClose }) {
               ))}
             </div>
             <div className="mt-1 text-[9px] tracking-[3px]">
-              {ficha}-{ticket.placa}
+              {ficha}-{tiquete.placa}
             </div>
           </div>
 

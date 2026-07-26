@@ -30,17 +30,17 @@ it("avisa el destino elegido con el mismo id de siempre", async () => {
   const usuario = userEvent.setup();
   const cambiarVista = vi.fn();
 
-  render(<BarraLateral vista="dashboard" setVista={cambiarVista} />);
+  render(<BarraLateral vista="tablero" setVista={cambiarVista} />);
 
   await usuario.click(screen.getByRole("button", { name: "Nuevo Día" }));
   expect(cambiarVista).toHaveBeenCalledWith("nuevoDia");
 
   await usuario.click(screen.getByRole("button", { name: "Tablero" }));
-  expect(cambiarVista).toHaveBeenCalledWith("dashboard");
+  expect(cambiarVista).toHaveBeenCalledWith("tablero");
 });
 
 it("refresca el nombre cuando se guarda la configuración", () => {
-  render(<BarraLateral vista="dashboard" setVista={vi.fn()} />);
+  render(<BarraLateral vista="tablero" setVista={vi.fn()} />);
 
   expect(screen.getByText("Parqueadero Y&G")).toBeInTheDocument();
 

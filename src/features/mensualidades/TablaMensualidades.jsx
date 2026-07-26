@@ -13,7 +13,7 @@ const COLUMNAS = ["Cliente", "Placa", "Valor", "Vencimiento", "Estado", "Accione
 const ESTILO_ESTADO = {
   Activa: "bg-exito-tenue text-background",
   "Por vencer": "bg-alerta text-background",
-  Vencida: "bg-destructive text-white",
+  Vencida: "bg-destructive text-destructive-foreground",
 };
 
 const FILAS_ESQUELETO = [1, 2, 3];

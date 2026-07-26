@@ -18,19 +18,19 @@ vi.mock("sonner", () => ({ toast: { success: avisoExito, error: avisoError } }))
 
 // El tiquete ya tiene sus propias pruebas: aquí solo interesa que aparezca.
 vi.mock("@/features/tiquetes/Tiquete", () => ({
-  default: ({ ticket }) => <div>tiquete:{ticket.ficha}</div>,
+  default: ({ tiquete }) => <div>tiquete:{tiquete.ficha}</div>,
 }));
 
-function pintar(onSuccess = vi.fn()) {
+function pintar(onRefrescar = vi.fn()) {
   const cliente = new QueryClient({ defaultOptions: { queries: { retry: false } } });
 
   render(
     <QueryClientProvider client={cliente}>
-      <IngresoRapido onSuccess={onSuccess} />
+      <IngresoRapido onRefrescar={onRefrescar} />
     </QueryClientProvider>,
   );
 
-  return { usuario: userEvent.setup(), onSuccess, campo: screen.getByLabelText("Placa") };
+  return { usuario: userEvent.setup(), onRefrescar, campo: screen.getByLabelText("Placa") };
 }
 
 beforeEach(() => {
@@ -50,7 +50,7 @@ it("arranca con el cursor en la placa y el formulario escondido", () => {
 });
 
 it("registra con Enter, limpia la placa, avisa al tablero y muestra el tiquete", async () => {
-  const { usuario, onSuccess, campo } = pintar();
+  const { usuario, onRefrescar, campo } = pintar();
 
   await usuario.type(campo, "abc123");
   expect(screen.getByText("Registrar Ingreso")).toBeInTheDocument();
@@ -66,7 +66,7 @@ it("registra con Enter, limpia la placa, avisa al tablero y muestra el tiquete",
     });
   });
 
-  expect(onSuccess).toHaveBeenCalledTimes(1);
+  expect(onRefrescar).toHaveBeenCalledTimes(1);
   expect(avisoExito).toHaveBeenCalledWith("Ingreso registrado • F-0003");
   expect(await screen.findByText("tiquete:3")).toBeInTheDocument();
   expect(campo).toHaveValue("");

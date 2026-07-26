@@ -22,7 +22,7 @@ function tiempoTranscurrido(horaIngreso) {
   return minutos < 60 ? `${minutos}m` : `${Math.floor(minutos / 60)}h ${minutos % 60}m`;
 }
 
-export default function GrillaParqueo({ vehiculos, loading, onRefresh }) {
+export default function GrillaParqueo({ vehiculos, cargando, onRefrescar }) {
   const [busqueda, setBusqueda] = useState("");
 
   const ocupados = vehiculos || [];
@@ -56,7 +56,7 @@ export default function GrillaParqueo({ vehiculos, loading, onRefresh }) {
         </div>
 
         <CardAction>
-          <Button variant="outline" size="sm" className="text-xs" onClick={onRefresh}>
+          <Button variant="outline" size="sm" className="text-xs" onClick={onRefrescar}>
             <RotateCw />
             Actualizar
           </Button>
@@ -75,7 +75,7 @@ export default function GrillaParqueo({ vehiculos, loading, onRefresh }) {
           />
         </div>
 
-        {loading && (
+        {cargando && (
           <div className={CLASES_GRILLA}>
             {ESQUELETOS.map((id) => (
               <Skeleton key={id} className="h-[90px] rounded-lg" />
@@ -83,14 +83,14 @@ export default function GrillaParqueo({ vehiculos, loading, onRefresh }) {
           </div>
         )}
 
-        {!loading && casillas.length === 0 && (
+        {!cargando && casillas.length === 0 && (
           <div className="flex flex-col items-center gap-2 py-12 text-center text-muted-foreground">
             <SearchX className="size-8 text-tenue" />
             <span>Ninguna casilla coincide con «{busqueda}»</span>
           </div>
         )}
 
-        {!loading && casillas.length > 0 && (
+        {!cargando && casillas.length > 0 && (
           <div className={CLASES_GRILLA}>
             {casillas.map((casilla, indice) => (
               <TarjetaCasilla key={casilla.ficha + indice} casilla={casilla} busqueda={busqueda} />

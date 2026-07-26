@@ -35,12 +35,12 @@ const CLAVES_TARIFA = {
 
 const esquemaPlaca = z.string().min(1, "Escribe la placa del vehículo");
 
-export default function IngresoRapido({ onSuccess }) {
+export default function IngresoRapido({ onRefrescar }) {
   const [placa, setPlaca] = useState("");
   const [tipo, setTipo] = useState("MOTO");
   const [cascos, setCascos] = useState(0);
   const [modalidad, setModalidad] = useState("HORA");
-  const [ticket, setTicket] = useState(null);
+  const [tiquete, setTiquete] = useState(null);
   const [errorPlaca, setErrorPlaca] = useState("");
   const [aviso, setAviso] = useState(null); // "exito" | "error"
   const campoPlaca = useRef(null);
@@ -57,7 +57,7 @@ export default function IngresoRapido({ onSuccess }) {
       const ahora = new Date();
       const config = obtenerConfig();
 
-      setTicket({
+      setTiquete({
         ficha: Number.parseInt(datos.ficha.replace("F-", ""), 10),
         placa: ingreso.placa,
         modalidad: ingreso.modalidad,
@@ -71,14 +71,14 @@ export default function IngresoRapido({ onSuccess }) {
       // El tiquete alcanza a pintarse, sale por la impresora y se cierra solo.
       setTimeout(() => {
         window.print();
-        setTimeout(() => setTicket(null), 300);
+        setTimeout(() => setTiquete(null), 300);
       }, 500);
 
       toast.success(`Ingreso registrado • ${datos.ficha}`);
       setAviso("exito");
       setPlaca("");
       setCascos(0);
-      onSuccess?.();
+      onRefrescar?.();
 
       setTimeout(() => {
         setAviso(null);
@@ -253,7 +253,7 @@ export default function IngresoRapido({ onSuccess }) {
         </CardContent>
       </Card>
 
-      {ticket && <Tiquete ticket={ticket} tipo="ingreso" onClose={() => setTicket(null)} />}
+      {tiquete && <Tiquete tiquete={tiquete} tipo="ingreso" onClose={() => setTiquete(null)} />}
     </>
   );
 }
