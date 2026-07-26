@@ -117,11 +117,35 @@ El servidor **siempre recalcula** el valor: no confía en el que le mande la int
 
 ## Datos y respaldos
 
-La base de datos es un archivo SQLite:
+La base de datos es un archivo SQLite. **Dónde queda depende de cómo se esté ejecutando:**
 
-- En desarrollo: `data/parqueadero.db`
-- Instalada: en la carpeta de datos del usuario (Electron se la pasa al servidor por la
-  variable `PARQUEADERO_DATOS`), porque escribir dentro de Archivos de programa falla en Windows.
+| Situación               | Dónde queda `parqueadero.db`                     |
+| ----------------------- | ------------------------------------------------ |
+| Desarrollo (`make dev`) | `data/` del repo                                 |
+| Instalada en Windows    | `%APPDATA%\parqueadero-yg\datos\`                |
+| AppImage en Linux       | `~/.config/parqueadero-yg/datos/`                |
+| **Modo portátil**       | La carpeta `datos/` que esté junto al ejecutable |
+
+Nunca se escribe junto al programa instalado: en Windows, Archivos de programa es de solo
+lectura para el usuario.
+
+### Modo portátil (llevarse los datos en una USB)
+
+Por defecto **los datos NO viajan con el ejecutable**: copiar el `.AppImage` o el `.exe`
+portable a otra máquina no se lleva la base de datos.
+
+Para que sí viajen, crea una carpeta llamada `datos` **al lado** del ejecutable:
+
+```
+mi-usb/
+├── parqueadero-yg-3.0.0-x86_64.AppImage
+└── datos/          ← con solo crearla, la app guarda aquí
+```
+
+Es opt-in a propósito: si guardara siempre al lado, la app puesta en Descargas o en una
+carpeta de solo lectura no podría escribir.
+
+Y por encima de todo manda la variable `PARQUEADERO_DATOS`, si se define.
 
 Cada vez que arranca el servidor se crea un respaldo en `data/respaldos/` y se conservan los
 **30 más recientes**. Para uno manual: `make respaldo`.
