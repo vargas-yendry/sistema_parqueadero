@@ -1,0 +1,47 @@
+{
+  "name": "parqueadero-yg",
+  "version": "1.0.0",
+  "main": "desktop/main.js",
+
+  "scripts": {
+    "build": "cd frontend && pnpm run build",
+    "electron": "electron .",
+    "dist": "electron-builder"
+  },
+
+  "devDependencies": {
+    "electron": "^37.2.0",
+    "electron-builder": "^26.0.12"
+  },
+
+  "build": {
+
+    "appId": "com.parqueadero.yg",
+
+    "productName": "Parqueadero Y&G",
+
+    "directories": {
+
+      "output": "instalador"
+
+    },
+
+    "files": [
+  "desktop/**/*",
+  "frontend/dist/**/*",
+  "backend/**/*"
+],
+
+"asarUnpack": [
+  "backend/**/*"
+],
+
+    "win": {
+
+      "target": "nsis"
+
+    }
+
+  }
+
+}

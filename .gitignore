@@ -1,0 +1,35 @@
+# Dependencias
+node_modules/
+.pnpm-store/
+
+# Salidas de build
+dist/
+instalador/
+*.tsbuildinfo
+
+# Datos en vivo del parqueadero (NUNCA al repo)
+data/
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# Entorno
+.env
+.env.*
+!.env.example
+
+# Editor / sistema
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+
+# Logs y caché
+*.log
+npm-debug.log*
+pnpm-debug.log*
+.cache/
+coverage/
+.vitest/
