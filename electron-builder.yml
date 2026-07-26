@@ -7,18 +7,22 @@ directories:
 
 # Solo entra lo que la app necesita en caliente: el build de la interfaz,
 # el shell de Electron y el servidor con sus rutas por feature.
+# La interfaz ya va compilada en dist/; del código fuente solo entra lo que el
+# servidor carga en caliente. Se incluye todo src/features/**/*.js (no solo
+# rutas.js) porque las rutas importan módulos vecinos como salidas/cobro.js.
 files:
   - dist/**/*
   - desktop/**/*
   - src/servidor/**/*
-  - src/features/*/rutas.js
+  - src/features/**/*.js
+  - "!src/features/**/*.test.js"
   - package.json
 
 # El servidor corre como proceso hijo (fork), así que debe quedar fuera del asar,
 # igual que el binario nativo de sqlite3.
 asarUnpack:
   - src/servidor/**/*
-  - src/features/*/rutas.js
+  - src/features/**/*.js
   - node_modules/sqlite3/**/*
 
 win:
