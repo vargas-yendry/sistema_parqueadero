@@ -4,3 +4,4 @@ data
 coverage
 node_modules
 pnpm-lock.yaml
+Makefile

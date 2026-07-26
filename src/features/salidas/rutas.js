@@ -5,25 +5,22 @@ import { calcularCobro, calcularMinutos } from "./cobro.js";
 
 // Buscar vehículo por ficha
 router.post("/buscar", (req, res) => {
-
   const { ficha, ...tarifas } = req.body;
 
   db.get(
-
     `SELECT * FROM vehiculos
      WHERE ficha=? AND estado='ACTIVO'`,
 
     [ficha],
 
     (err, vehiculo) => {
-
       if (err) {
         return res.status(500).json(err);
       }
 
       if (!vehiculo) {
         return res.status(404).json({
-          mensaje: "Ficha no encontrada"
+          mensaje: "Ficha no encontrada",
         });
       }
 
@@ -38,48 +35,35 @@ router.post("/buscar", (req, res) => {
       });
 
       res.json({
-
         ...vehiculo,
         minutos,
         valor,
-        horaSalida
-
+        horaSalida,
       });
-
-    }
-
+    },
   );
-
 });
 
 // Finalizar salida
 router.post("/finalizar", (req, res) => {
-  
-  console.log("BODY FINALIZAR:", req.body);
-
   // El valor lo recalcula el servidor: no se confía en el que manda el cliente.
   const { id, ...tarifas } = req.body;
 
   db.get(
-
     `SELECT * FROM vehiculos WHERE id=?`,
 
     [id],
 
     (err, vehiculo) => {
-
       if (err) {
         return res.status(500).json(err);
       }
 
       if (!vehiculo) {
         return res.status(404).json({
-          mensaje: "Vehículo no encontrado"
+          mensaje: "Vehículo no encontrado",
         });
       }
-
-      console.log("VEHICULO ENCONTRADO:");
-console.log(vehiculo);
 
       const horaSalida = new Date();
       const minutos = calcularMinutos(vehiculo.horaIngreso, horaSalida);
@@ -93,7 +77,6 @@ console.log(vehiculo);
 
       // guardar historial
       db.run(
-
         `INSERT INTO salidas(
   placa,
   ficha,
@@ -106,58 +89,46 @@ console.log(vehiculo);
         VALUES(?,?,?,?,?,?)`,
 
         [
-  vehiculo.placa,
-  vehiculo.ficha,
-  vehiculo.horaIngreso,
-  horaSalida.toISOString(),
-  `${minutos} minutos`,
-  valorFinal
-],
+          vehiculo.placa,
+          vehiculo.ficha,
+          vehiculo.horaIngreso,
+          horaSalida.toISOString(),
+          `${minutos} minutos`,
+          valorFinal,
+        ],
 
-        function(err){
-
-          if(err){
+        function (err) {
+          if (err) {
             return res.status(500).json(err);
           }
 
           // liberar ficha
           db.run(
-
             `UPDATE vehiculos
              SET estado='SALIO'
              WHERE id=?`,
 
             [id],
 
-            function(err){
-
-              if(err){
+            function (err) {
+              if (err) {
                 return res.status(500).json(err);
               }
 
               res.json({
-                mensaje:"Salida registrada"
+                mensaje: "Salida registrada",
               });
-
-            }
-
+            },
           );
-
-        }
-
+        },
       );
-
-    }
-
+    },
   );
-
 });
 
 // Estadísticas reales dashboard
-router.get("/estadisticas", (req,res)=>{
-
+router.get("/estadisticas", (req, res) => {
   db.get(
-
     `
     SELECT valor
     FROM configuracion
@@ -166,23 +137,14 @@ router.get("/estadisticas", (req,res)=>{
 
     [],
 
-    (err,config)=>{
-
-      if(err){
+    (err, config) => {
+      if (err) {
         return res.status(500).json(err);
       }
 
-      const fechaBase =
-        config?.valor ||
-        "2000-01-01";
-      
-      console.log(
-  "ULTIMA LIQUIDACION:",
-  fechaBase
-);
+      const fechaBase = config?.valor || "2000-01-01";
 
       db.get(
-
         `
         SELECT
 
@@ -202,42 +164,26 @@ router.get("/estadisticas", (req,res)=>{
          as ingresosHoy
         `,
 
-        [
-          fechaBase,
-          fechaBase,
-          fechaBase
-        ],
+        [fechaBase, fechaBase, fechaBase],
 
-        (err,data)=>{
-
-          if(err){
+        (err, data) => {
+          if (err) {
             return res.status(500).json(err);
           }
 
           res.json({
+            vehiculosHoy: data.vehiculosHoy || 0,
 
-            vehiculosHoy:
-              data.vehiculosHoy || 0,
+            salidasHoy: data.salidasHoy || 0,
 
-            salidasHoy:
-              data.salidasHoy || 0,
+            ingresosHoy: data.ingresosHoy || 0,
 
-            ingresosHoy:
-              data.ingresosHoy || 0,
-
-            gananciaNeta:
-              data.ingresosHoy || 0
-
+            gananciaNeta: data.ingresosHoy || 0,
           });
-
-        }
-
+        },
       );
-
-    }
-
+    },
   );
-
 });
 
 export default router;

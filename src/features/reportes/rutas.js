@@ -21,7 +21,7 @@ const VENTANAS = {
     salidas: "strftime('%Y-%m',horaSalida)=strftime('%Y-%m','now')",
     ventas: "strftime('%Y-%m',fecha)=strftime('%Y-%m','now')",
   },
-  "Año": {
+  Año: {
     salidas: "strftime('%Y',horaSalida)=strftime('%Y','now')",
     ventas: "strftime('%Y',fecha)=strftime('%Y','now')",
   },

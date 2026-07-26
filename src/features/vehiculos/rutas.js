@@ -3,9 +3,7 @@ const router = express.Router();
 import db from "../../servidor/base-datos.js";
 
 router.get("/", (req, res) => {
-
   db.all(
-
     `
     SELECT *
     FROM vehiculos
@@ -16,17 +14,13 @@ router.get("/", (req, res) => {
     [],
 
     (err, rows) => {
-
       if (err) {
         return res.status(500).json(err);
       }
 
       res.json(rows);
-
-    }
-
+    },
   );
-
 });
 
 export default router;

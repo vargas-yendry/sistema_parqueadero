@@ -4,37 +4,20 @@ import db from "../../servidor/base-datos.js";
 
 // Listar
 router.get("/", (req, res) => {
-
-  db.all(
-    "SELECT * FROM mensualidades ORDER BY id DESC",
-    [],
-    (err, rows) => {
-
-      if (err) {
-        return res.status(500).json(err);
-      }
-
-      res.json(rows);
-
+  db.all("SELECT * FROM mensualidades ORDER BY id DESC", [], (err, rows) => {
+    if (err) {
+      return res.status(500).json(err);
     }
-  );
 
+    res.json(rows);
+  });
 });
 
 // Crear
 router.post("/", (req, res) => {
-
-  const {
-    cliente,
-    placa,
-    telefono,
-    fechaInicio,
-    fechaVencimiento,
-    valor
-  } = req.body;
+  const { cliente, placa, telefono, fechaInicio, fechaVencimiento, valor } = req.body;
 
   db.run(
-
     `INSERT INTO mensualidades(
       cliente,
       placa,
@@ -45,71 +28,45 @@ router.post("/", (req, res) => {
     )
     VALUES(?,?,?,?,?,?)`,
 
-    [
-      cliente,
-      placa,
-      telefono,
-      fechaInicio,
-      fechaVencimiento,
-      valor
-    ],
+    [cliente, placa, telefono, fechaInicio, fechaVencimiento, valor],
 
-    function(err){
-
-      if(err){
+    function (err) {
+      if (err) {
         return res.status(500).json(err);
       }
 
       res.json({
         id: this.lastID,
-        mensaje: "Mensualidad creada"
+        mensaje: "Mensualidad creada",
       });
-
-    }
-
+    },
   );
-
 });
 
 // Eliminar
-router.delete("/:id", (req,res)=>{
-
+router.delete("/:id", (req, res) => {
   db.run(
-
     "DELETE FROM mensualidades WHERE id=?",
 
     [req.params.id],
 
-    function(err){
-
-      if(err){
+    function (err) {
+      if (err) {
         return res.status(500).json(err);
       }
 
       res.json({
-        mensaje:"Mensualidad eliminada"
+        mensaje: "Mensualidad eliminada",
       });
-
-    }
-
+    },
   );
-
 });
 
 // Actualizar mensualidad
 router.put("/:id", (req, res) => {
-
-  const {
-    cliente,
-    placa,
-    telefono,
-    fechaInicio,
-    fechaVencimiento,
-    valor
-  } = req.body;
+  const { cliente, placa, telefono, fechaInicio, fechaVencimiento, valor } = req.body;
 
   db.run(
-
     `UPDATE mensualidades
      SET
        cliente=?,
@@ -120,30 +77,18 @@ router.put("/:id", (req, res) => {
        valor=?
      WHERE id=?`,
 
-    [
-      cliente,
-      placa,
-      telefono,
-      fechaInicio,
-      fechaVencimiento,
-      valor,
-      req.params.id
-    ],
+    [cliente, placa, telefono, fechaInicio, fechaVencimiento, valor, req.params.id],
 
-    function(err){
-
-      if(err){
+    function (err) {
+      if (err) {
         return res.status(500).json(err);
       }
 
       res.json({
-        mensaje:"Mensualidad actualizada"
+        mensaje: "Mensualidad actualizada",
       });
-
-    }
-
+    },
   );
-
 });
 
 export default router;

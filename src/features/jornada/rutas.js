@@ -3,11 +3,9 @@ const router = express.Router();
 import db from "../../servidor/base-datos.js";
 
 router.post("/", (req, res) => {
-
   const fechaCorte = new Date().toISOString();
 
   db.run(
-
     `
     INSERT OR REPLACE INTO configuracion(
       clave,
@@ -21,14 +19,12 @@ router.post("/", (req, res) => {
 
     [fechaCorte],
 
-    function(err){
-
-      if(err){
+    function (err) {
+      if (err) {
         return res.status(500).json(err);
       }
 
       db.run(
-
         `
         UPDATE vehiculos
         SET estado='SALIO'
@@ -37,24 +33,18 @@ router.post("/", (req, res) => {
 
         [],
 
-        function(err){
-
-          if(err){
+        function (err) {
+          if (err) {
             return res.status(500).json(err);
           }
 
           res.json({
-            mensaje:"Nuevo día iniciado"
+            mensaje: "Nuevo día iniciado",
           });
-
-        }
-
+        },
       );
-
-    }
-
+    },
   );
-
 });
 
 export default router;

@@ -2,43 +2,28 @@ import express from "express";
 const router = express.Router();
 import db from "../../servidor/base-datos.js";
 
-router.get("/", (req,res)=>{
-
-  const filtro =
-    req.query.filtro || "Hoy";
+router.get("/", (req, res) => {
+  const filtro = req.query.filtro || "Hoy";
 
   let condicion = "";
 
-  if(filtro === "Hoy"){
-
-    condicion =
-      "DATE(fecha)=DATE('now','localtime')";
-
+  if (filtro === "Hoy") {
+    condicion = "DATE(fecha)=DATE('now','localtime')";
   }
 
-  if(filtro === "Semana"){
-
-    condicion =
-      "fecha >= date('now','-7 day')";
-
+  if (filtro === "Semana") {
+    condicion = "fecha >= date('now','-7 day')";
   }
 
-  if(filtro === "Mes"){
-
-    condicion =
-      "strftime('%Y-%m',fecha)=strftime('%Y-%m','now')";
-
+  if (filtro === "Mes") {
+    condicion = "strftime('%Y-%m',fecha)=strftime('%Y-%m','now')";
   }
 
-  if(filtro === "Año"){
-
-    condicion =
-      "strftime('%Y',fecha)=strftime('%Y','now')";
-
+  if (filtro === "Año") {
+    condicion = "strftime('%Y',fecha)=strftime('%Y','now')";
   }
 
   db.all(
-
     `
     SELECT *
     FROM gastos
@@ -48,26 +33,17 @@ router.get("/", (req,res)=>{
 
     [],
 
-    (err,rows)=>{
-
-      if(err){
+    (err, rows) => {
+      if (err) {
         return res.status(500).json(err);
       }
 
       res.json(rows);
-
-    }
-
+    },
   );
-
 });
-router.post("/",(req,res)=>{
-
-  const {
-    concepto,
-    valor,
-    fecha
-  } = req.body;
+router.post("/", (req, res) => {
+  const { concepto, valor, fecha } = req.body;
 
   db.run(
     `
@@ -78,44 +54,29 @@ router.post("/",(req,res)=>{
     )
     VALUES(?,?,?)
     `,
-    [
-      concepto,
-      valor,
-      fecha
-    ],
-    function(err){
-
-      if(err){
+    [concepto, valor, fecha],
+    function (err) {
+      if (err) {
         return res.status(500).json(err);
       }
 
       res.json({
-        id:this.lastID
+        id: this.lastID,
       });
-
-    }
+    },
   );
-
 });
 
-router.delete("/:id",(req,res)=>{
-
-  db.run(
-    "DELETE FROM gastos WHERE id=?",
-    [req.params.id],
-    function(err){
-
-      if(err){
-        return res.status(500).json(err);
-      }
-
-      res.json({
-        mensaje:"Eliminado"
-      });
-
+router.delete("/:id", (req, res) => {
+  db.run("DELETE FROM gastos WHERE id=?", [req.params.id], function (err) {
+    if (err) {
+      return res.status(500).json(err);
     }
-  );
 
+    res.json({
+      mensaje: "Eliminado",
+    });
+  });
 });
 
 export default router;
