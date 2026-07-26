@@ -1,23 +1,12 @@
 import express from "express";
 const router = express.Router();
 import db from "../../servidor/base-datos.js";
+import { calcularCobro, calcularMinutos } from "./cobro.js";
 
 // Buscar vehículo por ficha
 router.post("/buscar", (req, res) => {
 
-  const {
-  ficha,
-
-  tarifaMoto = 1000,
-  tarifaCarro = 2000,
-
-  tarifaMotoDia = 8000,
-  tarifaCarroDia = 15000,
-
-  tarifaMotoNoche = 5000,
-  tarifaCarroNoche = 10000
-
-} = req.body;
+  const { ficha, ...tarifas } = req.body;
 
   db.get(
 
@@ -38,46 +27,15 @@ router.post("/buscar", (req, res) => {
         });
       }
 
-      const horaIngreso = new Date(vehiculo.horaIngreso);
       const horaSalida = new Date();
+      const minutos = calcularMinutos(vehiculo.horaIngreso, horaSalida);
 
-      const minutos = Math.floor(
-        (horaSalida - horaIngreso) / 1000 / 60
-      );
-
-      let valor = 0;
-
-if (vehiculo.modalidad === "DIA") {
-
-  valor =
-    vehiculo.tipo === "CARRO"
-      ? Number(tarifaCarroDia)
-      : Number(tarifaMotoDia);
-
-}
-else if (vehiculo.modalidad === "NOCHE") {
-
-  valor =
-    vehiculo.tipo === "CARRO"
-      ? Number(tarifaCarroNoche)
-      : Number(tarifaMotoNoche);
-
-}
-else {
-
-  const tarifaBase =
-    vehiculo.tipo === "CARRO"
-      ? Number(tarifaCarro)
-      : Number(tarifaMoto);
-
-  const horas = Math.max(
-    1,
-    Math.ceil(minutos / 65)
-  );
-
-  valor = tarifaBase * horas;
-
-}
+      const valor = calcularCobro({
+        tipo: vehiculo.tipo,
+        modalidad: vehiculo.modalidad,
+        minutos,
+        tarifas,
+      });
 
       res.json({
 
@@ -99,10 +57,8 @@ router.post("/finalizar", (req, res) => {
   
   console.log("BODY FINALIZAR:", req.body);
 
-  const {
-    id,
-    valor
-  } = req.body;
+  // El valor lo recalcula el servidor: no se confía en el que manda el cliente.
+  const { id, ...tarifas } = req.body;
 
   db.get(
 
@@ -126,46 +82,15 @@ router.post("/finalizar", (req, res) => {
 console.log(vehiculo);
 
       const horaSalida = new Date();
+      const minutos = calcularMinutos(vehiculo.horaIngreso, horaSalida);
 
-      const minutos = Math.floor(
-        (horaSalida - new Date(vehiculo.horaIngreso))
-        / 1000 / 60
-      );
+      const valorFinal = calcularCobro({
+        tipo: vehiculo.tipo,
+        modalidad: vehiculo.modalidad,
+        minutos,
+        tarifas,
+      });
 
-
-      let valorFinal = 0;
-
-if (vehiculo.modalidad === "DIA") {
-
-  valorFinal =
-    vehiculo.tipo === "CARRO"
-      ? Number(req.body.tarifaCarroDia || 15000)
-      : Number(req.body.tarifaMotoDia || 8000);
-
-}
-else if (vehiculo.modalidad === "NOCHE") {
-
-  valorFinal =
-    vehiculo.tipo === "CARRO"
-      ? Number(req.body.tarifaCarroNoche || 10000)
-      : Number(req.body.tarifaMotoNoche || 5000);
-
-}
-else {
-
-  const tarifaBase =
-    vehiculo.tipo === "CARRO"
-      ? Number(req.body.tarifaCarro || 2000)
-      : Number(req.body.tarifaMoto || 1000);
-
-  const horas = Math.max(
-    1,
-    Math.ceil(minutos / 65)
-  );
-
-  valorFinal = tarifaBase * horas;
-
-}
       // guardar historial
       db.run(
 

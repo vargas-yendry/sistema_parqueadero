@@ -15,7 +15,12 @@ const PUERTO = Number(process.env.PARQUEADERO_PUERTO ?? 3333);
 
 const app = express();
 
-app.use(cors());
+// La API solo la consume esta máquina: la interfaz servida por Vite en desarrollo
+// y la ventana de Electron (origen file://, que llega como "null") ya instalada.
+const ORIGENES = ["http://localhost:5173", "http://127.0.0.1:5173", "null"];
+
+app.disable("x-powered-by");
+app.use(cors({ origin: ORIGENES }));
 app.use(express.json());
 
 app.use("/api/ingresos", ingresosRutas);
