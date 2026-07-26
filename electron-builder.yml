@@ -1,12 +1,18 @@
 appId: com.parqueadero.yg
-productName: Parqueadero Y&G
+
+# Sin el "&": AppImage rechaza ese carácter en el nombre de archivo, y en Windows
+# complica rutas y accesos directos. El nombre bonito con "&" se muestra en la
+# ventana y en el acceso directo de Windows (ver nsis.shortcutName).
+productName: Parqueadero YG
+executableName: parqueadero-yg
 copyright: Parqueadero Y&G
 
 directories:
   output: instalador
+  buildResources: build
 
-# Solo entra lo que la app necesita en caliente: el build de la interfaz,
-# el shell de Electron y el servidor con sus rutas por feature.
+artifactName: ${name}-${version}-${arch}.${ext}
+
 # La interfaz ya va compilada en dist/; del código fuente solo entra lo que el
 # servidor carga en caliente. Se incluye todo src/features/**/*.js (no solo
 # rutas.js) porque las rutas importan módulos vecinos como salidas/cobro.js.
@@ -24,6 +30,15 @@ asarUnpack:
   - src/servidor/**/*
   - src/features/**/*.js
   - node_modules/sqlite3/**/*
+
+linux:
+  target:
+    - AppImage
+  category: Office
+  synopsis: Sistema de parqueadero
+  description: Ingresos y salidas por ficha, mensualidades, accesorios y reportes.
+  # Sin esto el escritorio no asocia la ventana abierta con su lanzador.
+  syncDesktopName: true
 
 win:
   target: nsis
