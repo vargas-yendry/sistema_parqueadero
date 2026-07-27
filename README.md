@@ -28,24 +28,25 @@ make app         # compila la interfaz y abre la ventana de Electron
 
 ## Comandos
 
-| Comando         | Qué hace                                         |
-| --------------- | ------------------------------------------------ |
-| `make`          | Lista los comandos disponibles                   |
-| `make install`  | Instala dependencias (`--frozen-lockfile`)       |
-| `make dev`      | API + interfaz a la vez, con recarga en caliente |
-| `make dev-api`  | Solo la API                                      |
-| `make dev-ui`   | Solo la interfaz                                 |
-| `make build`    | Compila la interfaz a `dist/`                    |
-| `make app`      | Compila y abre la ventana de Electron            |
-| `make dist`     | Genera el instalador de Windows en `instalador/` |
-| `make lint`     | ESLint con autofix                               |
-| `make format`   | Prettier reescribiendo                           |
-| `make test`     | Vitest                                           |
-| `make coverage` | Vitest con reporte de cobertura                  |
-| `make check`    | Puerta de calidad: lint + formato + pruebas      |
-| `make respaldo` | Copia manual de la base de datos                 |
-| `make clean`    | Borra `dist/`, `instalador/` y `coverage/`       |
-| `make reset`    | `clean` + borra `node_modules`                   |
+| Comando           | Qué hace                                         |
+| ----------------- | ------------------------------------------------ |
+| `make`            | Lista los comandos disponibles                   |
+| `make install`    | Instala dependencias (`--frozen-lockfile`)       |
+| `make dev`        | API + interfaz a la vez, con recarga en caliente |
+| `make dev-api`    | Solo la API                                      |
+| `make dev-ui`     | Solo la interfaz                                 |
+| `make build`      | Compila la interfaz a `dist/`                    |
+| `make app`        | Compila y abre la ventana de Electron            |
+| `make dist-linux` | Genera el `.deb` y el AppImage                   |
+| `make dist-win`   | Instalador de Windows (solo corre EN Windows)    |
+| `make lint`       | ESLint con autofix                               |
+| `make format`     | Prettier reescribiendo                           |
+| `make test`       | Vitest                                           |
+| `make coverage`   | Vitest con reporte de cobertura                  |
+| `make check`      | Puerta de calidad: lint + formato + pruebas      |
+| `make respaldo`   | Copia manual de la base de datos                 |
+| `make clean`      | Borra `dist/`, `instalador/` y `coverage/`       |
+| `make reset`      | `clean` + borra `node_modules`                   |
 
 Antes de commitear: `make check` en verde. El orden importa — lint primero y formato después,
 porque `eslint --fix` deja indentaciones que Prettier luego corrige.
@@ -153,10 +154,6 @@ Cada vez que arranca el servidor se crea un respaldo en `data/respaldos/` y se c
 `data/` está fuera de git: son los datos reales del negocio.
 
 ## Instalador
-
-```bash
-make dist        # genera instalador/ con el .exe (NSIS)
-```
 
 Se empaqueta la interfaz compilada (`dist/`) y el servidor (`dist-servidor/servidor.cjs`).
 
