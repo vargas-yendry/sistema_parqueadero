@@ -6,7 +6,7 @@ DATOS := data
 FECHA := $(shell date +%Y-%m-%dT%H-%M-%S)
 
 .DEFAULT_GOAL := ayuda
-.PHONY: ayuda install dev dev-api dev-ui build app dist dist-linux lint format test coverage check respaldo clean reset
+.PHONY: ayuda install dev dev-api dev-ui build app dist-linux dist-win lint format test coverage check respaldo clean reset
 
 ayuda: ## Muestra esta ayuda
 	@echo "Parqueadero Y&G — comandos disponibles:"
@@ -33,11 +33,19 @@ build: ## Compila la interfaz a dist/
 app: build ## Compila y abre la app de escritorio (Electron)
 	$(PNPM) run electron
 
-dist: ## Genera el instalador de Windows en instalador/
-	$(PNPM) run dist
+dist-linux: build ## Genera el .deb y el AppImage de Linux
+	$(PNPM) exec electron-builder --linux
 
-dist-linux: build ## Genera el AppImage de Linux en instalador/
-	$(PNPM) exec electron-builder --linux AppImage
+# El instalador de Windows NO se puede construir desde Linux: sqlite3 es un
+# binario nativo y saldría el de Linux dentro del .exe. El build terminaría bien
+# y la app reventaría en el equipo del cliente.
+dist-win: ## Instalador de Windows (hay que correrlo EN Windows)
+	@if [ "$$OS" != "Windows_NT" ]; then \
+		echo "Este build tiene que hacerse en Windows — ver docs/instalador-windows.md"; \
+		exit 1; \
+	fi
+	$(PNPM) run build
+	$(PNPM) exec electron-builder --win
 
 lint: ## ESLint con autofix
 	$(PNPM) run lint

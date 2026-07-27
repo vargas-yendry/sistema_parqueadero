@@ -178,10 +178,24 @@ repo Node encuentra el `node_modules` de al lado y el fallo no se ve.
 ### Linux
 
 ```bash
-make dist-linux   # instalador/parqueadero-yg-<versión>-x86_64.AppImage
+make dist-linux   # genera el .deb y el AppImage
 ```
 
-El AppImage es un archivo único y ejecutable, sin instalación ni permisos de administrador.
+- **`.deb`** — el entregable principal: declara las dependencias del sistema e integra menú e
+  icono como cualquier programa del equipo.
+- **AppImage** — plan B portátil: un archivo, sin instalar y sin permisos de administrador.
+
+> En Arch, el `.deb` necesita `libxcrypt-compat` (la herramienta `fpm` que trae electron-builder
+> es Ruby y busca `libcrypt.so.1`): `sudo pacman -S libxcrypt-compat`.
+
+### Windows
+
+**No se puede construir desde Linux.** `sqlite3` es un binario nativo y saldría el de Linux
+dentro del `.exe`: el build termina bien y la app revienta en el equipo del cliente. El
+procedimiento está en [`docs/instalador-windows.md`](docs/instalador-windows.md).
+
+Windows 7 no está soportado, y la razón está escrita en
+[`docs/decisiones/2026-07-26-sin-windows-7.md`](docs/decisiones/2026-07-26-sin-windows-7.md).
 
 ## Variables de entorno
 

@@ -13,8 +13,9 @@ directories:
 
 artifactName: ${name}-${version}-${arch}.${ext}
 
-# Nada de código fuente: entra la interfaz compilada (dist/), el servidor
-# empaquetado en un solo CommonJS (dist-servidor/) y el shell de Electron.
+# La interfaz ya va compilada en dist/; del código fuente solo entra lo que el
+# servidor carga en caliente. Se incluye todo src/features/**/*.js (no solo
+# rutas.js) porque las rutas importan módulos vecinos como salidas/cobro.js.
 #
 # node_modules queda fuera porque todas las dependencias ya están dentro de esos
 # dos paquetes. La excepción es sqlite3: es binario nativo y no se puede
@@ -33,7 +34,7 @@ files:
   - node_modules/file-uri-to-path/**/*
 
 # El servidor corre como proceso hijo (fork) y carga un binario nativo. Desde una
-# ruta desempaquetada no se puede leer hacia dentro del .asar, así que el
+# ruta desempaquetada no se puede leer hacia dentro del asar, así que el
 # servidor y TODO lo que requiere en ejecución tienen que quedar fuera.
 asarUnpack:
   - dist-servidor/**/*
@@ -41,18 +42,40 @@ asarUnpack:
 
 linux:
   target:
-    - AppImage
+    # deb  = entregable principal: declara las dependencias del sistema e integra
+    #        menú e icono como cualquier programa del equipo.
+    # AppImage = plan B portátil: un archivo, sin instalar y sin administrador.
+    - target: deb
+      arch: [x64]
+    - target: AppImage
+      arch: [x64]
   category: Office
   synopsis: Sistema de parqueadero
   description: Ingresos y salidas por ficha, mensualidades, accesorios y reportes.
+  maintainer: Parqueadero Y&G <murksopps@gmail.com>
   # Sin esto el escritorio no asocia la ventana abierta con su lanzador.
   syncDesktopName: true
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Windows
+#
+# OJO: este build NO se puede hacer desde Linux. sqlite3 es un binario nativo y
+# el empaquetado mete el que haya compilado para la máquina actual: desde Arch
+# saldría un .node de Linux dentro del .exe y la app reventaría al abrir la base
+# de datos, con el agravante de que el build "termina bien". Hay que construirlo
+# en Windows. Ver docs/instalador-windows.md.
+#
+# Solo x64: sqlite3 6.0.1 publica únicamente el binario win32-x64 (verificado en
+# sus releases), así que un build de 32 bits tendría que compilarse desde fuente
+# con Visual Studio en la máquina destino.
+# ─────────────────────────────────────────────────────────────────────────────
 win:
   target:
     # nsis = instalador de siempre; portable = un .exe suelto que no se instala.
-    - nsis
-    - portable
+    - target: nsis
+      arch: [x64]
+    - target: portable
+      arch: [x64]
 
 portable:
   artifactName: ${name}-${version}-portable.${ext}
@@ -64,3 +87,4 @@ nsis:
   createDesktopShortcut: true
   createStartMenuShortcut: true
   shortcutName: Parqueadero Y&G
+  uninstallDisplayName: Parqueadero Y&G ${version}

@@ -3,9 +3,10 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { app, BrowserWindow, dialog, Menu } from "electron";
+import { app, BrowserWindow, dialog } from "electron";
 
 import { resolverCarpetaDatos } from "./carpeta-datos.js";
+import { crearVentana } from "./ventana.js";
 
 const carpetaActual = path.dirname(fileURLToPath(import.meta.url));
 const raizProyecto = path.join(carpetaActual, "..");
@@ -18,6 +19,16 @@ const ESPERA_SERVIDOR = 15_000;
 
 let servidor = null;
 let cerrando = false;
+
+// Windows agrupa la ventana y las notificaciones por este identificador; sin él
+// la app sale suelta en la barra de tareas.
+app.setAppUserModelId("com.parqueadero.yg");
+
+// Salida para un equipo con tarjeta gráfica problemática: se arranca con
+// PARQUEADERO_SIN_GPU=1 y se dibuja por software.
+if (process.env.PARQUEADERO_SIN_GPU) {
+  app.disableHardwareAcceleration();
+}
 
 // Dos instancias pelearían por el puerto de la API. La segunda le cede el turno
 // a la primera y se cierra.
@@ -38,7 +49,7 @@ async function arrancar() {
     return;
   }
 
-  crearVentana();
+  crearVentana({ raizProyecto, urlDesarrollo });
 }
 
 /**
@@ -106,28 +117,6 @@ function iniciarServidor() {
       }
     });
   });
-}
-
-function crearVentana() {
-  const ventana = new BrowserWindow({
-    width: 1400,
-    height: 900,
-    show: false,
-    backgroundColor: "#060d18",
-    webPreferences: {
-      nodeIntegration: false,
-      contextIsolation: true,
-    },
-  });
-
-  Menu.setApplicationMenu(null);
-  ventana.once("ready-to-show", () => ventana.show());
-
-  if (urlDesarrollo) {
-    ventana.loadURL(urlDesarrollo);
-  } else {
-    ventana.loadFile(path.join(raizProyecto, "dist", "index.html"));
-  }
 }
 
 function enfocarVentanaExistente() {
