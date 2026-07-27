@@ -13,6 +13,14 @@ directories:
 
 artifactName: ${name}-${version}-${arch}.${ext}
 
+# Electron trae 55 idiomas y pesan 46 MB. Esta app es solo en español; se deja
+# el inglés porque es el idioma de reserva de Chromium para sus propios textos
+# (diálogos de impresión, menús del sistema).
+electronLanguages:
+  - es
+  - es-419
+  - en-US
+
 # La interfaz ya va compilada en dist/; del código fuente solo entra lo que el
 # servidor carga en caliente. Se incluye todo src/features/**/*.js (no solo
 # rutas.js) porque las rutas importan módulos vecinos como salidas/cobro.js.

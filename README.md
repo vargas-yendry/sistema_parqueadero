@@ -181,9 +181,13 @@ repo Node encuentra el `node_modules` de al lado y el fallo no se ve.
 make dist-linux   # genera el .deb y el AppImage
 ```
 
-- **`.deb`** — el entregable principal: declara las dependencias del sistema e integra menú e
-  icono como cualquier programa del equipo.
-- **AppImage** — plan B portátil: un archivo, sin instalar y sin permisos de administrador.
+| Paquete                                    | Tamaño | Cuándo usarlo                                                                                        |
+| ------------------------------------------ | ------ | ---------------------------------------------------------------------------------------------------- |
+| `parqueadero-yg-<versión>-amd64.deb`       | 89 MB  | **El principal.** Declara las dependencias del sistema, integra menú e icono, y trae perfil AppArmor |
+| `parqueadero-yg-<versión>-x86_64.AppImage` | 112 MB | Portátil: un archivo, sin instalar ni permisos de administrador                                      |
+
+El `.deb` conserva el sandbox de Chromium; el AppImage arranca con `--no-sandbox`, que
+electron-builder cablea en su lanzador. Para un equipo fijo, mejor el `.deb`.
 
 > En Arch, el `.deb` necesita `libxcrypt-compat` (la herramienta `fpm` que trae electron-builder
 > es Ruby y busca `libcrypt.so.1`): `sudo pacman -S libxcrypt-compat`.
