@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 
-import { EVENTO_CONFIG, obtenerConfig } from "@/features/configuracion/configuracion";
+import { EVENTO_CONFIG, obtenerConfig } from "@/features/configuracion/config";
 import { Button } from "@/interfaz/button";
 import { cn } from "@/interfaz/cn";
 

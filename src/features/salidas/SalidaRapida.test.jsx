@@ -3,7 +3,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
 
-import { CONFIG_DEFECTO } from "@/features/configuracion/configuracion";
+import { CONFIG_DEFECTO } from "@/features/configuracion/config";
 import SalidaRapida from "@/features/salidas/SalidaRapida";
 import { formatearPesos } from "@/formato";
 

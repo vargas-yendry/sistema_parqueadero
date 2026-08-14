@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { CONFIG_DEFECTO, EVENTO_CONFIG, guardarConfig, obtenerConfig } from "./configuracion.js";
+import { CONFIG_DEFECTO, EVENTO_CONFIG, guardarConfig, obtenerConfig } from "./config.js";
 
 describe("obtenerConfig", () => {
   beforeEach(() => {

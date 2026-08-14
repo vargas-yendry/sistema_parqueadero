@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { act } from "react";
 import { expect, it, vi } from "vitest";
 
-import { guardarConfig } from "@/features/configuracion/configuracion";
+import { guardarConfig } from "@/features/configuracion/config";
 import BarraLateral from "@/navegacion/BarraLateral";
 
 const ETIQUETAS = [

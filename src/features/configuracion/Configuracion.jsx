@@ -7,7 +7,7 @@ import {
   esquemaConfig,
   guardarConfig,
   obtenerConfig,
-} from "@/features/configuracion/configuracion";
+} from "@/features/configuracion/config";
 import { Button } from "@/interfaz/button";
 import { cn } from "@/interfaz/cn";
 import {

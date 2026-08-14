@@ -1,6 +1,6 @@
 import { Printer } from "lucide-react";
 
-import { obtenerConfig } from "@/features/configuracion/configuracion";
+import { obtenerConfig } from "@/features/configuracion/config";
 import { Button } from "@/interfaz/button";
 import { cn } from "@/interfaz/cn";
 import { Dialog, DialogContent, DialogTitle } from "@/interfaz/dialog";

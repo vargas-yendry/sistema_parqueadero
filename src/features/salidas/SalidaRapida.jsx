@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { api } from "@/api";
-import { obtenerConfig } from "@/features/configuracion/configuracion";
+import { obtenerConfig } from "@/features/configuracion/config";
 import Tiquete from "@/features/tiquetes/Tiquete";
 import { formatearFecha, formatearHora, formatearPesos } from "@/formato";
 import { Badge } from "@/interfaz/badge";

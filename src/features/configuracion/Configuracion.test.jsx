@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
 
 import Configuracion from "@/features/configuracion/Configuracion";
-import { obtenerConfig } from "@/features/configuracion/configuracion";
+import { obtenerConfig } from "@/features/configuracion/config";
 
 const { avisoExito } = vi.hoisted(() => ({ avisoExito: vi.fn() }));
 
