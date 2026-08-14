@@ -30,6 +30,9 @@ export default defineConfig({
     environment: "jsdom",
     globals: true,
     setupFiles: ["./vitest.setup.js"],
+    // Hilos en vez de procesos: en Windows forkear un worker por archivo agota
+    // recursos y revienta con `spawn UNKNOWN`. Además arranca mucho más rápido.
+    pool: "threads",
     include: ["src/**/*.test.{js,jsx}", "desktop/**/*.test.js"],
     coverage: {
       provider: "v8",
